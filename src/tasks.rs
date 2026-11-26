@@ -39,7 +39,7 @@ struct Row {
 
 fn friendly_app_name(apps: &Apps, class: &str) -> String {
     if class.is_empty() {
-        return "Fenêtre".to_string();
+        return "Window".to_string();
     }
     if let Some(app) = apps.apps().iter().find(|a| {
         a.id.eq_ignore_ascii_case(class)
@@ -404,9 +404,9 @@ impl Render for TaskSwitcher {
                             .text_sm()
                             .text_color(cx.theme().muted_foreground)
                             .child(if total_count == 0 {
-                                "Aucune fenêtre ouverte"
+                                "No open windows"
                             } else {
-                                "Aucune fenêtre ne correspond au filtre"
+                                "No windows match the filter"
                             }),
                     ),
             );
@@ -455,7 +455,7 @@ impl Render for TaskSwitcher {
                     let subtitle = if r.workspace.is_empty() {
                         r.app_name.clone()
                     } else {
-                        format!("{} · Espace {}", r.app_name, r.workspace)
+                        format!("{} · Workspace {}", r.app_name, r.workspace)
                     };
 
                     row_el = row_el.child(
@@ -568,7 +568,7 @@ impl Render for TaskSwitcher {
                             .text_size(px(22.))
                             .font_weight(FontWeight::BOLD)
                             .text_color(cx.theme().foreground)
-                            .child("Fenêtres ouvertes"),
+                            .child("Open windows"),
                     )
                     .when(total_count > 0, |d| {
                         d.child(
@@ -598,7 +598,7 @@ impl Render for TaskSwitcher {
                         .child(
                             ws_pill(
                                 "tk-ws-all",
-                                format!("Toutes · {total_count}"),
+                                format!("All · {total_count}"),
                                 !self.workspace_only,
                                 primary,
                                 primary_fg,
@@ -614,7 +614,7 @@ impl Render for TaskSwitcher {
                         .child(
                             ws_pill(
                                 "tk-ws-cur",
-                                format!("Espace {active_ws_label} · {active_ws_count}"),
+                                format!("Workspace {active_ws_label} · {active_ws_count}"),
                                 self.workspace_only,
                                 primary,
                                 primary_fg,
@@ -700,7 +700,7 @@ impl Render for TaskSwitcher {
                         div()
                             .text_xs()
                             .text_color(cx.theme().muted_foreground.opacity(0.85))
-                            .child("Naviguer · Entrée focaliser · Suppr fermer · Ctrl+F flottant · Ctrl+M ramener · Échap fermer"),
+                            .child("Navigate · Enter focus · Del close · Ctrl+F float · Ctrl+M move here · Esc close"),
                     ),
             )
     }

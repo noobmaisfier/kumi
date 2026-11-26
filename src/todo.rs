@@ -52,13 +52,13 @@ enum NavFilter {
 impl NavFilter {
     fn title(&self) -> String {
         match self {
-            NavFilter::Focus => "Vue Focus · Prochaines tâches".to_string(),
-            NavFilter::All => "Toutes les tâches".to_string(),
-            NavFilter::Kanban => "Tableau Kanban".to_string(),
-            NavFilter::Today => "Aujourd'hui & en retard".to_string(),
-            NavFilter::HighPriority => "Haute priorité".to_string(),
-            NavFilter::InProgress => "En cours".to_string(),
-            NavFilter::Done => "Tâches terminées".to_string(),
+            NavFilter::Focus => "Focus View · Up Next".to_string(),
+            NavFilter::All => "All Tasks".to_string(),
+            NavFilter::Kanban => "Kanban Board".to_string(),
+            NavFilter::Today => "Today & Overdue".to_string(),
+            NavFilter::HighPriority => "High Priority".to_string(),
+            NavFilter::InProgress => "In Progress".to_string(),
+            NavFilter::Done => "Completed Tasks".to_string(),
             NavFilter::Tag(t) => format!("#{t}"),
         }
     }
@@ -74,9 +74,9 @@ enum SortBy {
 impl SortBy {
     fn label(self) -> &'static str {
         match self {
-            SortBy::Priority => "Tri: Priorité",
-            SortBy::DueDate => "Tri: Échéance",
-            SortBy::Order => "Tri: Ajout",
+            SortBy::Priority => "Sort: Priority",
+            SortBy::DueDate => "Sort: Due Date",
+            SortBy::Order => "Sort: Added",
         }
     }
 
@@ -161,7 +161,7 @@ impl TodoWidget {
             return search.clone();
         }
         let search =
-            cx.new(|cx| InputState::new(window, cx).placeholder("Rechercher… (Ctrl+F)"));
+            cx.new(|cx| InputState::new(window, cx).placeholder("Search… (Ctrl+F)"));
         cx.subscribe_in(&search, window, |this, state, ev: &InputEvent, _, cx| {
             if matches!(ev, InputEvent::Change) {
                 this.search_query = state.read(cx).value().to_string();
@@ -197,7 +197,7 @@ impl TodoWidget {
             _ => String::new(),
         };
 
-        let title = cx.new(|cx| InputState::new(window, cx).placeholder("Titre de la tâche…"));
+        let title = cx.new(|cx| InputState::new(window, cx).placeholder("Task title…"));
         cx.subscribe_in(&title, window, |this, _, ev: &InputEvent, window, cx| {
             if matches!(ev, InputEvent::PressEnter { .. }) {
                 this.submit_create_modal(window, cx);
@@ -208,12 +208,12 @@ impl TodoWidget {
         let description = cx.new(|cx| {
             TextareaState::new(window, cx)
                 .rows(3)
-                .placeholder("Notes, contexte ou étapes (optionnel)…")
+                .placeholder("Notes, context, or steps (optional)…")
         });
 
         let due_str = due_date.clone().unwrap_or_default();
         let due_input = cx.new(|cx| {
-            let mut st = InputState::new(window, cx).placeholder("AAAA-MM-JJ");
+            let mut st = InputState::new(window, cx).placeholder("YYYY-MM-DD");
             if !due_str.is_empty() {
                 st.set_value(due_str, window, cx);
             }
@@ -246,7 +246,7 @@ impl TodoWidget {
         .detach();
 
         let tags_input = cx.new(|cx| {
-            let mut st = InputState::new(window, cx).placeholder("Tags séparés par virgule (ex: dev, urgent)");
+            let mut st = InputState::new(window, cx).placeholder("Comma-separated tags (e.g. dev, urgent)");
             if !initial_tags.is_empty() {
                 st.set_value(initial_tags, window, cx);
             }
@@ -324,7 +324,7 @@ impl TodoWidget {
         let initial_due = task.due_date.clone().unwrap_or_default();
 
         let title = cx.new(|cx| {
-            let mut st = InputState::new(window, cx).placeholder("Titre de la tâche");
+            let mut st = InputState::new(window, cx).placeholder("Task title");
             st.set_value(initial_title, window, cx);
             st
         });
@@ -340,7 +340,7 @@ impl TodoWidget {
         let description = cx.new(|cx| {
             let mut st = TextareaState::new(window, cx)
                 .rows(4)
-                .placeholder("Ajouter des notes, liens ou contexte…");
+                .placeholder("Add notes, links, or context…");
             st.set_value(initial_desc, window, cx);
             st
         });
@@ -358,7 +358,7 @@ impl TodoWidget {
         .detach();
 
         let due_date = cx.new(|cx| {
-            let mut st = InputState::new(window, cx).placeholder("AAAA-MM-JJ");
+            let mut st = InputState::new(window, cx).placeholder("YYYY-MM-DD");
             st.set_value(initial_due, window, cx);
             st
         });
@@ -387,7 +387,7 @@ impl TodoWidget {
         })
         .detach();
 
-        let tag = cx.new(|cx| InputState::new(window, cx).placeholder("Nouveau tag…"));
+        let tag = cx.new(|cx| InputState::new(window, cx).placeholder("New tag…"));
         cx.subscribe_in(&tag, window, move |this, st, ev: &InputEvent, window, cx| {
             if matches!(ev, InputEvent::PressEnter { .. }) {
                 let val = st.read(cx).value().to_string();
@@ -400,7 +400,7 @@ impl TodoWidget {
         .detach();
 
         let subtask =
-            cx.new(|cx| InputState::new(window, cx).placeholder("Ajouter une étape…"));
+            cx.new(|cx| InputState::new(window, cx).placeholder("Add a subtask…"));
         cx.subscribe_in(
             &subtask,
             window,
@@ -640,7 +640,7 @@ impl TodoWidget {
                     })),
             )
             .child(
-                SidebarMenuItem::new("Liste Todo")
+                SidebarMenuItem::new("Todo List")
                     .icon(svg_icon(SVG_LIST))
                     .active(self.nav == NavFilter::All)
                     .suffix(count_pill(active))
@@ -650,7 +650,7 @@ impl TodoWidget {
                     })),
             )
             .child(
-                SidebarMenuItem::new("Tableau Kanban")
+                SidebarMenuItem::new("Kanban Board")
                     .icon(svg_icon(SVG_KANBAN))
                     .active(self.nav == NavFilter::Kanban)
                     .on_click(cx.listener(|this, _, _, cx| {
@@ -661,7 +661,7 @@ impl TodoWidget {
 
         let filters_menu = SidebarMenu::new()
             .child(
-                SidebarMenuItem::new("Aujourd'hui")
+                SidebarMenuItem::new("Today")
                     .icon(svg_icon(SVG_CALENDAR))
                     .active(self.nav == NavFilter::Today)
                     .suffix(count_pill(today))
@@ -671,7 +671,7 @@ impl TodoWidget {
                     })),
             )
             .child(
-                SidebarMenuItem::new("Haute priorité")
+                SidebarMenuItem::new("High Priority")
                     .icon(svg_icon(SVG_FLAME))
                     .active(self.nav == NavFilter::HighPriority)
                     .suffix(count_pill(high))
@@ -681,7 +681,7 @@ impl TodoWidget {
                     })),
             )
             .child(
-                SidebarMenuItem::new("En cours")
+                SidebarMenuItem::new("In Progress")
                     .icon(svg_icon(SVG_CLOCK))
                     .active(self.nav == NavFilter::InProgress)
                     .suffix(count_pill(in_prog))
@@ -691,7 +691,7 @@ impl TodoWidget {
                     })),
             )
             .child(
-                SidebarMenuItem::new("Terminées")
+                SidebarMenuItem::new("Done")
                     .icon(svg_icon(SVG_CHECK_CIRCLE))
                     .active(self.nav == NavFilter::Done)
                     .suffix(count_pill(done))
@@ -731,8 +731,8 @@ impl TodoWidget {
                         .child(Badge::new().count(active)),
                 ),
             )
-            .child(SidebarGroup::new("Vues").child(views_menu))
-            .child(SidebarGroup::new("Filtres").child(filters_menu));
+            .child(SidebarGroup::new("Views").child(views_menu))
+            .child(SidebarGroup::new("Filters").child(filters_menu));
 
         if !tags.is_empty() {
             let mut tags_menu = SidebarMenu::new();
@@ -781,7 +781,7 @@ impl TodoWidget {
                                         div()
                                             .font_weight(FontWeight::MEDIUM)
                                             .text_color(cx.theme().foreground)
-                                            .child("Progression"),
+                                            .child("Progress"),
                                     )
                                     .child(
                                         div()
@@ -950,7 +950,7 @@ impl TodoWidget {
                 Tag::new()
                     .with_variant(TagVariant::Warning)
                     .xsmall()
-                    .child("En cours")
+                    .child("In Progress")
             }))
             .children(item.due_date.as_deref().map(Self::due_tag))
             .child(
@@ -1059,7 +1059,7 @@ impl TodoWidget {
                                             .as_ref()
                                             .map(|t| t.title.clone())
                                             .unwrap_or_else(|| {
-                                                "Aucune tâche active — créez-en une avec + Nouvelle tâche"
+                                                "No active tasks — create one with + New Task"
                                                     .to_string()
                                             }),
                                     ),
@@ -1089,7 +1089,7 @@ impl TodoWidget {
                                     } else {
                                         SVG_PLAY
                                     }))
-                                    .label(if pomo_running { "Pause" } else { "Démarrer" })
+                                    .label(if pomo_running { "Pause" } else { "Start" })
                                     .on_click(move |_, _, cx| {
                                         pomo_toggle.update(cx, |p, cx| p.toggle(cx));
                                     }),
@@ -1098,7 +1098,7 @@ impl TodoWidget {
                                 Button::new("focus-pomo-skip")
                                     .small()
                                     .ghost()
-                                    .label("Passer")
+                                    .label("Skip")
                                     .on_click(move |_, _, cx| {
                                         pomo_skip.update(cx, |p, cx| p.skip(cx));
                                     }),
@@ -1128,14 +1128,14 @@ impl TodoWidget {
                         .text_xs()
                         .font_weight(FontWeight::SEMIBOLD)
                         .text_color(cx.theme().muted_foreground)
-                        .child("PROCHAINES TÂCHES PRIORITAIRES (3–5)"),
+                        .child("TOP PRIORITY TASKS (3–5)"),
                 )
                 .child(
                     div()
                         .text_xs()
                         .text_color(cx.theme().muted_foreground)
                         .child(format!(
-                            "{} active(s) au total",
+                            "{} active total",
                             self.store.read(cx).active_count()
                         )),
                 ),
@@ -1151,13 +1151,13 @@ impl TodoWidget {
                     .gap_3()
                     .text_sm()
                     .text_color(cx.theme().muted_foreground)
-                    .child("Tout est à jour !")
+                    .child("All caught up!")
                     .child(
                         Button::new("focus-empty-new")
                             .small()
                             .primary()
                             .icon(svg_icon(SVG_PLUS))
-                            .label("Nouvelle tâche")
+                            .label("New Task")
                             .on_click(cx.listener(|this, _, window, cx| {
                                 this.open_create_modal(None, window, cx);
                             })),
@@ -1217,13 +1217,13 @@ impl TodoWidget {
                     .gap_3()
                     .text_sm()
                     .text_color(cx.theme().muted_foreground)
-                    .child("Aucune tâche dans cette vue.")
+                    .child("No tasks in this view.")
                     .child(
                         Button::new("list-empty-new")
                             .small()
                             .primary()
                             .icon(svg_icon(SVG_PLUS))
-                            .label("Nouvelle tâche")
+                            .label("New Task")
                             .on_click(cx.listener(|this, _, window, cx| {
                                 this.open_create_modal(None, window, cx);
                             })),
@@ -1252,13 +1252,13 @@ impl TodoWidget {
                             .text_xs()
                             .font_weight(FontWeight::SEMIBOLD)
                             .text_color(cx.theme().muted_foreground)
-                            .child(format!("TERMINÉES ({})", done.len())),
+                            .child(format!("COMPLETED ({})", done.len())),
                     )
                     .child(
                         Button::new("list-clear-done")
                             .xsmall()
                             .ghost()
-                            .label("Tout effacer")
+                            .label("Clear all")
                             .on_click(move |_, _, cx| {
                                 store_clear.update(cx, |s, cx| s.clear_done(cx));
                             }),
@@ -1337,7 +1337,7 @@ impl TodoWidget {
                                             Button::new("kb-clear-done")
                                                 .xsmall()
                                                 .ghost()
-                                                .label("Vider")
+                                                .label("Clear")
                                                 .on_click(move |_, _, cx| {
                                                     s_clear.update(cx, |s, cx| s.clear_done(cx));
                                                 }),
@@ -1364,7 +1364,7 @@ impl TodoWidget {
                         .justify_center()
                         .text_xs()
                         .text_color(cx.theme().muted_foreground)
-                        .child("Aucune carte"),
+                        .child("No cards"),
                 );
             }
 
@@ -1562,10 +1562,10 @@ impl TodoWidget {
         }
 
         let due_presets = [
-            ("Aucune", None),
-            ("Aujourd'hui", Some(today_str())),
-            ("Demain", Some(in_days_str(1))),
-            ("+3 jours", Some(in_days_str(3))),
+            ("None", None),
+            ("Today", Some(today_str())),
+            ("Tomorrow", Some(in_days_str(1))),
+            ("+3 days", Some(in_days_str(3))),
         ];
         let mut due_row = div().flex().flex_row().items_center().gap_1p5();
         for (ix, (label, val)) in due_presets.into_iter().enumerate() {
@@ -1624,7 +1624,7 @@ impl TodoWidget {
                                     .text_base()
                                     .font_weight(FontWeight::BOLD)
                                     .text_color(cx.theme().foreground)
-                                    .child("Nouvelle tâche"),
+                                    .child("New Task"),
                             ),
                     )
                     .child(
@@ -1656,7 +1656,7 @@ impl TodoWidget {
                                     .text_xs()
                                     .font_weight(FontWeight::SEMIBOLD)
                                     .text_color(cx.theme().muted_foreground)
-                                    .child("TITRE"),
+                                    .child("TITLE"),
                             )
                             .child(Input::new(&title_state)),
                     )
@@ -1676,7 +1676,7 @@ impl TodoWidget {
                                             .text_xs()
                                             .font_weight(FontWeight::SEMIBOLD)
                                             .text_color(cx.theme().muted_foreground)
-                                            .child("COLONNE / STATUT"),
+                                            .child("COLUMN / STATUS"),
                                     )
                                     .child(status_bar),
                             )
@@ -1690,7 +1690,7 @@ impl TodoWidget {
                                             .text_xs()
                                             .font_weight(FontWeight::SEMIBOLD)
                                             .text_color(cx.theme().muted_foreground)
-                                            .child("PRIORITÉ"),
+                                            .child("PRIORITY"),
                                     )
                                     .child(prio_bar),
                             ),
@@ -1711,14 +1711,14 @@ impl TodoWidget {
                                             .text_xs()
                                             .font_weight(FontWeight::SEMIBOLD)
                                             .text_color(cx.theme().muted_foreground)
-                                            .child("ÉCHÉANCE"),
+                                            .child("DUE DATE"),
                                     )
                                     .children(if cur_due_invalid {
                                         Some(
                                             Tag::new()
                                                 .with_variant(TagVariant::Danger)
                                                 .xsmall()
-                                                .child("Format AAAA-MM-JJ")
+                                                .child("Format YYYY-MM-DD")
                                                 .into_any_element(),
                                         )
                                     } else {
@@ -1789,7 +1789,7 @@ impl TodoWidget {
                         div()
                             .text_xs()
                             .text_color(cx.theme().muted_foreground)
-                            .child("Entrée pour valider · Échap pour annuler"),
+                            .child("Enter to submit · Esc to cancel"),
                     )
                     .child(
                         div()
@@ -1801,7 +1801,7 @@ impl TodoWidget {
                                 Button::new("mod-cancel")
                                     .small()
                                     .ghost()
-                                    .label("Annuler")
+                                    .label("Cancel")
                                     .on_click(cx.listener(|this, _, window, cx| {
                                         this.close_create_modal(window, cx);
                                     })),
@@ -1811,7 +1811,7 @@ impl TodoWidget {
                                     .small()
                                     .primary()
                                     .icon(svg_icon(SVG_PLUS))
-                                    .label("Créer la tâche")
+                                    .label("Create Task")
                                     .on_click(cx.listener(|this, _, window, cx| {
                                         this.submit_create_modal(window, cx);
                                     })),
@@ -1894,10 +1894,10 @@ impl TodoWidget {
         }
 
         let due_presets = [
-            ("Auj.", Some(today_str())),
-            ("Dem.", Some(in_days_str(1))),
-            ("+3j", Some(in_days_str(3))),
-            ("Aucune", None),
+            ("Today", Some(today_str())),
+            ("Tmrw", Some(in_days_str(1))),
+            ("+3d", Some(in_days_str(3))),
+            ("None", None),
         ];
         let mut due_btns = div().flex().flex_row().items_center().gap_1();
         for (ix, (label, val)) in due_presets.into_iter().enumerate() {
@@ -2047,7 +2047,7 @@ impl TodoWidget {
                                     .text_xs()
                                     .font_weight(FontWeight::SEMIBOLD)
                                     .text_color(cx.theme().muted_foreground)
-                                    .child("TITRE"),
+                                    .child("TITLE"),
                             )
                             .child(Input::new(&title_state)),
                     )
@@ -2061,7 +2061,7 @@ impl TodoWidget {
                                     .text_xs()
                                     .font_weight(FontWeight::SEMIBOLD)
                                     .text_color(cx.theme().muted_foreground)
-                                    .child("PRIORITÉ"),
+                                    .child("PRIORITY"),
                             )
                             .child(prio_bar),
                     )
@@ -2081,14 +2081,14 @@ impl TodoWidget {
                                             .text_xs()
                                             .font_weight(FontWeight::SEMIBOLD)
                                             .text_color(cx.theme().muted_foreground)
-                                            .child("ÉCHÉANCE"),
+                                            .child("DUE DATE"),
                                     )
                                     .children(if due_invalid {
                                         Some(
                                             Tag::new()
                                                 .with_variant(TagVariant::Danger)
                                                 .xsmall()
-                                                .child("Format AAAA-MM-JJ")
+                                                .child("Format YYYY-MM-DD")
                                                 .into_any_element(),
                                         )
                                     } else {
@@ -2147,7 +2147,7 @@ impl TodoWidget {
                                             .text_xs()
                                             .font_weight(FontWeight::SEMIBOLD)
                                             .text_color(cx.theme().muted_foreground)
-                                            .child(format!("SOUS-TÂCHES ({sub_done}/{sub_total})")),
+                                            .child(format!("SUBTASKS ({sub_done}/{sub_total})")),
                                     ),
                             )
                             .when(sub_total > 0, |d| {
@@ -2193,7 +2193,7 @@ impl TodoWidget {
                                     .small()
                                     .primary()
                                     .icon(svg_icon(SVG_PLAY))
-                                    .label("Lancer Focus")
+                                    .label("Start Focus")
                                     .on_click(cx.listener(move |this, _, _, cx| {
                                         this.start_focus_on(id, cx);
                                     })),
@@ -2203,7 +2203,7 @@ impl TodoWidget {
                                     .small()
                                     .danger()
                                     .icon(svg_icon(SVG_TRASH))
-                                    .label("Supprimer")
+                                    .label("Delete")
                                     .on_click(cx.listener(move |this, _, window, cx| {
                                         store_del.update(cx, |s, cx| s.remove(id, cx));
                                         this.selected_id = None;
@@ -2217,7 +2217,7 @@ impl TodoWidget {
                         Button::new("det-done-close")
                             .small()
                             .secondary()
-                            .label("Fermer")
+                            .label("Close")
                             .on_click(cx.listener(|this, _, window, cx| {
                                 this.selected_id = None;
                                 this.detail_inputs = None;
@@ -2321,7 +2321,7 @@ impl Render for TodoWidget {
                             .small()
                             .primary()
                             .icon(svg_icon(SVG_PLUS))
-                            .label("Nouvelle tâche")
+                            .label("New Task")
                             .on_click(cx.listener(|this, _, window, cx| {
                                 this.open_create_modal(None, window, cx);
                             })),

@@ -250,7 +250,7 @@ impl ControlCenter {
         let st = cx.new(|cx| {
             InputState::new(window, cx)
                 .masked(true)
-                .placeholder("Mot de passe Wi-Fi…")
+                .placeholder("Wi-Fi password…")
         });
         cx.subscribe_in(&st, window, |this, _, ev: &InputEvent, window, cx| {
             if matches!(ev, InputEvent::PressEnter { .. }) {
@@ -351,7 +351,7 @@ impl ControlCenter {
                                     .text_base()
                                     .font_weight(FontWeight::BOLD)
                                     .text_color(cx.theme().foreground)
-                                    .child("Centre de contrôle"),
+                                    .child("Control Center"),
                             )
                             .child(
                                 div()
@@ -373,7 +373,7 @@ impl ControlCenter {
                             .small()
                             .secondary()
                             .icon(svg_icon(SVG_CLIPBOARD))
-                            .label("Presse-papiers")
+                            .label("Clipboard")
                             .on_click(|_, _, cx| ui::toggle_exclusive(ids::CLIPBOARD, cx)),
                     )
                     .child(
@@ -382,9 +382,9 @@ impl ControlCenter {
                             .secondary()
                             .icon(svg_icon(SVG_CHECK_CIRCLE))
                             .label(if active_tasks > 0 {
-                                format!("Tâches ({active_tasks})")
+                                format!("Tasks ({active_tasks})")
                             } else {
-                                "Tâches".to_string()
+                                "Tasks".to_string()
                             })
                             .on_click(|_, _, cx| ui::toggle_exclusive(ids::TODO, cx)),
                     )
@@ -453,20 +453,20 @@ impl ControlCenter {
         let dnd = self.notifs.read(cx).is_dnd();
 
         let wifi_sub = if !wifi_avail {
-            "Indisponible".to_string()
+            "Unavailable".to_string()
         } else if !radio {
-            "Désactivé".to_string()
+            "Off".to_string()
         } else if wifi_on {
             let sig = signal.map(|s| format!(" · {s}%")).unwrap_or_default();
-            format!("{}{sig}", ssid.unwrap_or_else(|| "Connecté".into()))
+            format!("{}{sig}", ssid.unwrap_or_else(|| "Connected".into()))
         } else {
-            "Hors ligne · Voir réseaux".to_string()
+            "Offline · View networks".to_string()
         };
 
         let bt_sub = if !bt_avail {
-            "Indisponible".to_string()
+            "Unavailable".to_string()
         } else if !bt_on {
-            "Désactivé".to_string()
+            "Off".to_string()
         } else if let Some(name) = bt_first_name {
             if bt_count > 1 {
                 format!("{name} (+{})", bt_count - 1)
@@ -474,11 +474,11 @@ impl ControlCenter {
                 name
             }
         } else {
-            "Activé · Voir appareils".to_string()
+            "On · View devices".to_string()
         };
 
         bento_card(cx)
-            .child(card_heading(SVG_WIFI, "Connectivité", cx))
+            .child(card_heading(SVG_WIFI, "Connectivity", cx))
             .child(
                 div()
                     .id("cc-row-wifi")
@@ -687,13 +687,13 @@ impl ControlCenter {
                                     .text_sm()
                                     .font_weight(FontWeight::SEMIBOLD)
                                     .text_color(cx.theme().foreground)
-                                    .child("Ne pas déranger"),
+                                    .child("Do Not Disturb"),
                             )
                             .child(
                                 div()
                                     .text_xs()
                                     .text_color(cx.theme().muted_foreground)
-                                    .child(if dnd { "Silencieux" } else { "Notifications actives" }),
+                                    .child(if dnd { "Silent" } else { "Notifications active" }),
                             ),
                     )
                     .child(
@@ -724,7 +724,7 @@ impl ControlCenter {
                     .flex_row()
                     .items_center()
                     .justify_between()
-                    .child(card_heading(SVG_VOL_2, "Audio & Écran", cx))
+                    .child(card_heading(SVG_VOL_2, "Audio & Display", cx))
                     .when(!sink.is_empty(), |d| {
                         d.child(
                             div()
@@ -768,7 +768,7 @@ impl ControlCenter {
                                 cx.theme().foreground
                             })
                             .child(if muted {
-                                "Muet".to_string()
+                                "Muted".to_string()
                             } else {
                                 format!("{vol}%")
                             }),
@@ -806,9 +806,9 @@ impl ControlCenter {
         let bat_state = bat.state();
         let watts = bat.energy_rate_watts();
         let bat_time = match bat_state {
-            BatteryState::Charging => bat.time_to_full().map(|d| format!("Pleine dans {}", fmt_duration(d))),
-            BatteryState::Discharging => bat.time_to_empty().map(|d| format!("Reste {}", fmt_duration(d))),
-            BatteryState::FullyCharged => Some("Chargée".to_string()),
+            BatteryState::Charging => bat.time_to_full().map(|d| format!("Full in {}", fmt_duration(d))),
+            BatteryState::Discharging => bat.time_to_empty().map(|d| format!("{} left", fmt_duration(d))),
+            BatteryState::FullyCharged => Some("Fully charged".to_string()),
             _ => None,
         };
         let bat_detail = match (bat_time, watts) {
@@ -849,7 +849,7 @@ impl ControlCenter {
         };
 
         bento_card(cx)
-            .child(card_heading(SVG_CPU, "Système", cx))
+            .child(card_heading(SVG_CPU, "System", cx))
             .child(
                 div()
                     .flex()
@@ -873,7 +873,7 @@ impl ControlCenter {
                                         div()
                                             .font_weight(FontWeight::MEDIUM)
                                             .text_color(cx.theme().foreground)
-                                            .child("Batterie"),
+                                            .child("Battery"),
                                     ),
                             )
                             .child(
@@ -920,7 +920,7 @@ impl ControlCenter {
                                         div()
                                             .font_weight(FontWeight::MEDIUM)
                                             .text_color(cx.theme().foreground)
-                                            .child("Mémoire RAM"),
+                                            .child("Memory"),
                                     ),
                             )
                             .child(
@@ -928,7 +928,7 @@ impl ControlCenter {
                                     .font_weight(FontWeight::BOLD)
                                     .font_features(ui::tabular())
                                     .text_color(cx.theme().foreground)
-                                    .child(format!("{mem_used:.1} / {mem_total:.1} Go ({mem_pct}%)")),
+                                    .child(format!("{mem_used:.1} / {mem_total:.1} GB ({mem_pct}%)")),
                             ),
                     )
                     .child(
@@ -953,14 +953,14 @@ impl ControlCenter {
                                 div()
                                     .font_weight(FontWeight::MEDIUM)
                                     .text_color(cx.theme().foreground)
-                                    .child("Disque /"),
+                                    .child("Disk /"),
                             )
                             .child(
                                 div()
                                     .font_weight(FontWeight::BOLD)
                                     .font_features(ui::tabular())
                                     .text_color(cx.theme().foreground)
-                                    .child(format!("{disk_used:.0} / {disk_total:.0} Go ({disk_pct}%)")),
+                                    .child(format!("{disk_used:.0} / {disk_total:.0} GB ({disk_pct}%)")),
                             ),
                     )
                     .child(
@@ -1102,7 +1102,7 @@ impl ControlCenter {
                     .flex_row()
                     .items_center()
                     .justify_between()
-                    .child(card_heading(SVG_MUSIC, "Média", cx))
+                    .child(card_heading(SVG_MUSIC, "Media", cx))
                     .when_some(player, |d, name| {
                         d.child(
                             Tag::new()
@@ -1138,7 +1138,7 @@ impl ControlCenter {
                                     .text_color(cx.theme().muted_foreground)
                                     .truncate()
                                     .child(if artist.is_empty() {
-                                        "Lecteur actif".to_string()
+                                        "Active player".to_string()
                                     } else {
                                         artist
                                     }),
@@ -1183,7 +1183,7 @@ impl ControlCenter {
                     .py_2()
                     .text_xs()
                     .text_color(cx.theme().muted_foreground)
-                    .child("Aucun média en cours de lecture")
+                    .child("No media playing")
                     .into_any_element(),
             })
     }
@@ -1201,7 +1201,7 @@ impl ControlCenter {
                     .py_4()
                     .text_xs()
                     .text_color(cx.theme().muted_foreground)
-                    .child("Aucune tâche en attente"),
+                    .child("No pending tasks"),
             );
         } else {
             for item in top_tasks {
@@ -1272,7 +1272,7 @@ impl ControlCenter {
                     .flex_row()
                     .items_center()
                     .justify_between()
-                    .child(card_heading(SVG_CHECK_CIRCLE, "Prochaines tâches", cx))
+                    .child(card_heading(SVG_CHECK_CIRCLE, "Upcoming tasks", cx))
                     .child(
                         Button::new("cc-todo-open")
                             .xsmall()
@@ -1366,7 +1366,7 @@ impl ControlCenter {
                     .flex_row()
                     .items_center()
                     .justify_between()
-                    .child(card_heading(SVG_PALETTE, "Thèmes", cx))
+                    .child(card_heading(SVG_PALETTE, "Themes", cx))
                     .child(
                         Tag::new()
                             .with_variant(TagVariant::Primary)
@@ -1401,7 +1401,7 @@ impl ControlCenter {
                     .justify_center()
                     .text_sm()
                     .text_color(cx.theme().muted_foreground)
-                    .child("Le Wi-Fi est désactivé — activez l'interrupteur ci-dessus."),
+                    .child("Wi-Fi is off — enable the toggle above."),
             );
         } else if networks.is_empty() {
             list = list.child(
@@ -1411,7 +1411,7 @@ impl ControlCenter {
                     .justify_center()
                     .text_sm()
                     .text_color(cx.theme().muted_foreground)
-                    .child("Aucun réseau détecté — lancez un scan."),
+                    .child("No networks found — run a scan."),
             );
         } else {
             for (i, n) in networks.into_iter().enumerate() {
@@ -1496,7 +1496,7 @@ impl ControlCenter {
                             Tag::new()
                                 .with_variant(TagVariant::Primary)
                                 .xsmall()
-                                .child("Connecté")
+                                .child("Connected")
                         })),
                 );
 
@@ -1517,7 +1517,7 @@ impl ControlCenter {
                                 Button::new("cc-wifi-pw-cancel")
                                     .xsmall()
                                     .ghost()
-                                    .label("Annuler")
+                                    .label("Cancel")
                                     .on_click(cx.listener(|this, _, window, cx| {
                                         this.wifi_cancel_pw(window, cx);
                                     })),
@@ -1526,7 +1526,7 @@ impl ControlCenter {
                                 Button::new("cc-wifi-pw-ok")
                                     .xsmall()
                                     .primary()
-                                    .label("Connecter")
+                                    .label("Connect")
                                     .on_click(cx.listener(|this, _, window, cx| {
                                         this.wifi_submit_pw(window, cx);
                                     })),
@@ -1569,7 +1569,7 @@ impl ControlCenter {
                                 div()
                                     .text_base()
                                     .font_weight(FontWeight::BOLD)
-                                    .child("Réseaux Wi-Fi"),
+                                    .child("Wi-Fi Networks"),
                             ),
                     )
                     .child(
@@ -1595,7 +1595,7 @@ impl ControlCenter {
                                 Button::new("cc-modal-wifi-scan")
                                     .xsmall()
                                     .secondary()
-                                    .label("Scanner")
+                                    .label("Scan")
                                     .on_click(cx.listener(|this, _, _, cx| {
                                         this.network.update(cx, |n, _| n.request_scan());
                                     })),
@@ -1653,7 +1653,7 @@ impl ControlCenter {
                     .justify_center()
                     .text_sm()
                     .text_color(cx.theme().muted_foreground)
-                    .child("Adaptateur Bluetooth indisponible."),
+                    .child("Bluetooth adapter unavailable."),
             );
         } else if !powered {
             list = list.child(
@@ -1663,7 +1663,7 @@ impl ControlCenter {
                     .justify_center()
                     .text_sm()
                     .text_color(cx.theme().muted_foreground)
-                    .child("Bluetooth désactivé — activez l'interrupteur ci-dessus."),
+                    .child("Bluetooth is off — enable the toggle above."),
             );
         } else if devices.is_empty() {
             list = list.child(
@@ -1673,7 +1673,7 @@ impl ControlCenter {
                     .justify_center()
                     .text_sm()
                     .text_color(cx.theme().muted_foreground)
-                    .child("Aucun appareil — lancez une recherche."),
+                    .child("No devices found — start a scan."),
             );
         } else {
             for (i, d) in devices.into_iter().enumerate() {
@@ -1732,7 +1732,7 @@ impl ControlCenter {
                                     TagVariant::Secondary
                                 })
                                 .xsmall()
-                                .child(if connected { "Connecté" } else { "Appairé" }),
+                                .child(if connected { "Connected" } else { "Paired" }),
                         ),
                 );
             }
@@ -1771,7 +1771,7 @@ impl ControlCenter {
                                 div()
                                     .text_base()
                                     .font_weight(FontWeight::BOLD)
-                                    .child("Appareils Bluetooth"),
+                                    .child("Bluetooth Devices"),
                             ),
                     )
                     .child(
@@ -1792,7 +1792,7 @@ impl ControlCenter {
                                 Button::new("cc-modal-bt-scan")
                                     .xsmall()
                                     .map(|b| if scanning { b.primary() } else { b.secondary() })
-                                    .label(if scanning { "Recherche…" } else { "Rechercher" })
+                                    .label(if scanning { "Scanning…" } else { "Scan" })
                                     .on_click(cx.listener(|this, _, _, cx| {
                                         this.bluetooth.update(cx, |b, _| b.toggle_scan());
                                     })),

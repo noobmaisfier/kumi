@@ -46,7 +46,7 @@ const ENTRIES: [Entry; 5] = [
     Entry {
         action: Action::Lock,
         icon: SVG_LOCK,
-        label: "Verrouiller",
+        label: "Lock",
         key: "l",
         confirm: false,
         destructive: false,
@@ -54,7 +54,7 @@ const ENTRIES: [Entry; 5] = [
     Entry {
         action: Action::Logout,
         icon: SVG_LOGOUT,
-        label: "Déconnexion",
+        label: "Log out",
         key: "o",
         confirm: true,
         destructive: true,
@@ -62,7 +62,7 @@ const ENTRIES: [Entry; 5] = [
     Entry {
         action: Action::Suspend,
         icon: SVG_MOON,
-        label: "Veille",
+        label: "Suspend",
         key: "s",
         confirm: false,
         destructive: false,
@@ -70,7 +70,7 @@ const ENTRIES: [Entry; 5] = [
     Entry {
         action: Action::Reboot,
         icon: SVG_ROTATE_CCW,
-        label: "Redémarrer",
+        label: "Reboot",
         key: "r",
         confirm: true,
         destructive: true,
@@ -78,7 +78,7 @@ const ENTRIES: [Entry; 5] = [
     Entry {
         action: Action::Shutdown,
         icon: SVG_POWER,
-        label: "Éteindre",
+        label: "Power off",
         key: "p",
         confirm: true,
         destructive: true,
@@ -112,7 +112,7 @@ fn read_uptime() -> String {
     let hours = mins / 60;
     let days = hours / 24;
     if days > 0 {
-        format!("{}j {}h", days, hours % 24)
+        format!("{}d {}h", days, hours % 24)
     } else if hours > 0 {
         format!("{}h {:02}m", hours, mins % 60)
     } else {
@@ -410,7 +410,7 @@ impl Render for PowerMenu {
                                 .font_weight(FontWeight::SEMIBOLD)
                                 .text_color(cx.theme().foreground)
                                 .child(format!(
-                                    "Confirmer « {} » ? (Entrée ou [{}])",
+                                    "Confirm \"{}\"? (Enter or [{}])",
                                     entry.label,
                                     entry.key.to_uppercase()
                                 )),
@@ -426,7 +426,7 @@ impl Render for PowerMenu {
                             Button::new("pw-arm-cancel")
                                 .xsmall()
                                 .ghost()
-                                .label("Annuler")
+                                .label("Cancel")
                                 .on_click(cx.listener(|this, _, _, cx| {
                                     this.armed = None;
                                     cx.notify();
@@ -455,8 +455,8 @@ impl Render for PowerMenu {
             .justify_between()
             .text_xs()
             .text_color(cx.theme().muted_foreground)
-            .child("←/→ choisir · Entrée valider · L O S R P raccourcis")
-            .child("Échap fermer");
+            .child("←/→ select · Enter confirm · L O S R P shortcuts")
+            .child("Esc close");
 
         let (panel_w, _) = clamped_panel_size(window, 620., 360., 500., 240.);
 

@@ -126,7 +126,7 @@ impl AppLauncher {
         }
         let input = cx.new(|cx| {
             InputState::new(window, cx)
-                .placeholder("Rechercher une application ou « > commande »…")
+                .placeholder("Search apps or '> command'…")
         });
         cx.subscribe_in(&input, window, |this, state, ev: &InputEvent, window, cx| {
             match ev {
@@ -444,11 +444,11 @@ impl Render for AppLauncher {
                     .gap_1p5()
                     .text_sm()
                     .text_color(cx.theme().muted_foreground)
-                    .child("Aucune application trouvée")
+                    .child("No applications found")
                     .child(
                         div()
                             .text_xs()
-                            .child("Préfixez avec « > » pour exécuter une commande shell"),
+                            .child("Prefix with '>' to run a shell command"),
                     ),
             );
         } else {
@@ -492,9 +492,9 @@ impl Render for AppLauncher {
                                                 .text_color(cx.theme().foreground)
                                                 .truncate()
                                                 .child(if empty_cmd {
-                                                    "Mode commande shell".to_string()
+                                                    "Shell command mode".to_string()
                                                 } else {
-                                                    format!("Exécuter « {cmd} »")
+                                                    format!("Run \"{cmd}\"")
                                                 }),
                                         )
                                         .child(
@@ -502,9 +502,9 @@ impl Render for AppLauncher {
                                                 .text_xs()
                                                 .text_color(cx.theme().muted_foreground)
                                                 .child(if empty_cmd {
-                                                    "Tapez une commande après « > » puis Entrée"
+                                                    "Type a command after '>' then press Enter"
                                                 } else {
-                                                    "Lancer via sh -c"
+                                                    "Launch via sh -c"
                                                 }),
                                         ),
                                 )
@@ -512,7 +512,7 @@ impl Render for AppLauncher {
                                     Tag::new()
                                         .with_variant(TagVariant::Primary)
                                         .xsmall()
-                                        .child("Entrée"),
+                                        .child("Enter"),
                                 ),
                         );
                     }
@@ -522,7 +522,7 @@ impl Render for AppLauncher {
                                 matches!(badge, EntryBadge::Favorite | EntryBadge::Recent);
                             if is_highlight && !shown_fav_header {
                                 shown_fav_header = true;
-                                list = list.child(section_label("FAVORIS & RÉCENTS", cx));
+                                list = list.child(section_label("PINNED & RECENT", cx));
                                 child_cursor += 1;
                             } else if !is_highlight && !shown_apps_header {
                                 shown_apps_header = true;
@@ -663,8 +663,8 @@ impl Render for AppLauncher {
             .justify_between()
             .text_xs()
             .text_color(cx.theme().muted_foreground)
-            .child("↑/↓ naviguer · Entrée ouvrir · > shell · Alt+P favori")
-            .child("Échap fermer");
+            .child("↑/↓ navigate · Enter launch · > shell · Alt+P pin")
+            .child("Esc close");
 
         let (panel_w, panel_h) = clamped_panel_size(window, 660., 480., 500., 340.);
 

@@ -51,10 +51,10 @@ enum ClipKind {
 impl ClipKind {
     fn label(&self) -> &'static str {
         match self {
-            Self::Color(..) => "Couleur",
-            Self::Url => "Lien URL",
+            Self::Color(..) => "Color",
+            Self::Url => "URL",
             Self::Code => "Code",
-            Self::Text => "Texte",
+            Self::Text => "Text",
         }
     }
 
@@ -160,7 +160,7 @@ fn single_line_preview(text: &str) -> String {
         .collect::<Vec<_>>()
         .join(" ↵ ");
     if collapsed.is_empty() {
-        "(vide)".to_string()
+        "(empty)".to_string()
     } else {
         collapsed
     }
@@ -168,26 +168,26 @@ fn single_line_preview(text: &str) -> String {
 
 fn format_relative_time(ts: Option<i64>) -> String {
     let Some(unix) = ts else {
-        return "Épinglé".to_string();
+        return "Pinned".to_string();
     };
     let delta = (Utc::now().timestamp() - unix).max(0);
     if delta < 45 {
-        "à l'instant".to_string()
+        "just now".to_string()
     } else if delta < 3600 {
-        format!("il y a {} min", delta / 60)
+        format!("{}m ago", delta / 60)
     } else if delta < 86_400 {
-        format!("il y a {} h", delta / 3600)
+        format!("{}h ago", delta / 3600)
     } else {
-        format!("il y a {} j", delta / 86_400)
+        format!("{}d ago", delta / 86_400)
     }
 }
 
 fn format_exact_time(ts: Option<i64>) -> String {
     let Some(unix) = ts else {
-        return "Conservé hors historique".to_string();
+        return "Kept outside history".to_string();
     };
     DateTime::<Utc>::from_timestamp(unix, 0)
-        .map(|dt| dt.with_timezone(&Local).format("%d/%m %H:%M:%S").to_string())
+        .map(|dt| dt.with_timezone(&Local).format("%b %d %H:%M:%S").to_string())
         .unwrap_or_else(|| "—".to_string())
 }
 
@@ -241,7 +241,7 @@ impl ClipboardPanel {
         if let Some(input) = &self.search_input {
             return input.clone();
         }
-        let input = cx.new(|cx| InputState::new(window, cx).placeholder("Rechercher dans le presse-papiers…"));
+        let input = cx.new(|cx| InputState::new(window, cx).placeholder("Search clipboard…"));
         cx.subscribe_in(&input, window, |this, state, ev: &InputEvent, window, cx| {
             match ev {
                 InputEvent::Change => {
@@ -413,7 +413,7 @@ impl ClipboardPanel {
             .lines()
             .map(str::trim)
             .find(|l| !l.is_empty())
-            .unwrap_or("Extrait presse-papiers");
+            .unwrap_or("Clipboard snippet");
         let title: String = first_line.chars().take(90).collect();
         let description = if text.trim() != title.trim() {
             text.to_string()
@@ -546,9 +546,9 @@ impl Render for ClipboardPanel {
                         })
                         .icon(svg_icon(SVG_TRASH))
                         .label(if self.clear_armed {
-                            "Confirmer ?"
+                            "Confirm?"
                         } else {
-                            "Vider"
+                            "Clear"
                         })
                         .on_click(cx.listener(|this, _, _, cx| {
                             if !this.clear_armed {
@@ -575,10 +575,10 @@ impl Render for ClipboardPanel {
             );
 
         let filters = [
-            (ClipFilter::All, "Tout".to_string()),
-            (ClipFilter::Pinned, format!("Épinglés ({pin_count})")),
-            (ClipFilter::Links, "Liens".to_string()),
-            (ClipFilter::Code, "Code & Couleurs".to_string()),
+            (ClipFilter::All, "All".to_string()),
+            (ClipFilter::Pinned, format!("Pinned ({pin_count})")),
+            (ClipFilter::Links, "Links".to_string()),
+            (ClipFilter::Code, "Code & Colors".to_string()),
         ];
 
         let mut filter_bar = div()
@@ -639,11 +639,11 @@ impl Render for ClipboardPanel {
                     .gap_1p5()
                     .text_sm()
                     .text_color(cx.theme().muted_foreground)
-                    .child("Aucun élément")
+                    .child("No items")
                     .child(
                         div()
                             .text_xs()
-                            .child("Copiez du texte ou ajustez le filtre."),
+                            .child("Copy some text or adjust the filter."),
                     ),
             );
         } else {
@@ -651,7 +651,7 @@ impl Render for ClipboardPanel {
                 let selected = i == self.selected;
                 let rel_time = format_relative_time(entry.timestamp_unix);
                 let sub = if entry.lines > 1 {
-                    format!("{rel_time} · {} l.", entry.lines)
+                    format!("{rel_time} · {} ln", entry.lines)
                 } else {
                     rel_time
                 };
@@ -777,7 +777,7 @@ impl Render for ClipboardPanel {
                 .text_sm()
                 .text_color(cx.theme().muted_foreground)
                 .child(svg_icon(SVG_CLIPBOARD).large())
-                .child("Sélectionnez une entrée"),
+                .child("Select an entry"),
             Some(entry) => {
                 let is_color = match &entry.kind {
                     ClipKind::Color(col, hex) => Some((*col, hex.clone())),
@@ -816,7 +816,7 @@ impl Render for ClipboardPanel {
                                     .font_features(ui::tabular())
                                     .text_color(cx.theme().muted_foreground)
                                     .child(format!(
-                                        "{} · {} l. · {} car.",
+                                        "{} · {} lines · {} chars",
                                         format_exact_time(entry.timestamp_unix),
                                         entry.lines,
                                         entry.chars
@@ -878,7 +878,7 @@ impl Render for ClipboardPanel {
                                             .small()
                                             .primary()
                                             .icon(svg_icon(SVG_COPY))
-                                            .label("Copier")
+                                            .label("Copy")
                                             .on_click(cx.listener(move |this, _, window, cx| {
                                                 this.copy_entry(&entry_for_copy, cx);
                                                 this.close(window, cx);
@@ -896,9 +896,9 @@ impl Render for ClipboardPanel {
                                             })
                                             .icon(svg_icon(SVG_PIN))
                                             .label(if entry.pinned {
-                                                "Épinglé"
+                                                "Pinned"
                                             } else {
-                                                "Épingler"
+                                                "Pin"
                                             })
                                             .on_click(cx.listener(move |this, _, _, cx| {
                                                 this.toggle_pin(pin_text.clone(), cx);
@@ -914,9 +914,9 @@ impl Render for ClipboardPanel {
                                                 SVG_CHECK_CIRCLE
                                             }))
                                             .label(if added_here {
-                                                "Ajouté"
+                                                "Added"
                                             } else {
-                                                "+ Tâche"
+                                                "+ Task"
                                             })
                                             .on_click(cx.listener(move |this, _, _, cx| {
                                                 this.send_to_todo(&todo_text, cx);
@@ -956,8 +956,8 @@ impl Render for ClipboardPanel {
             .justify_between()
             .text_xs()
             .text_color(cx.theme().muted_foreground)
-            .child("↑/↓ parcourir · Entrée copier · Alt+P épingler · Ctrl+F chercher")
-            .child("Échap fermer");
+            .child("↑/↓ browse · Enter copy · Alt+P pin · Ctrl+F search")
+            .child("Esc close");
 
         let (panel_w, panel_h) = clamped_panel_size(window, 840., 520., 620., 380.);
 

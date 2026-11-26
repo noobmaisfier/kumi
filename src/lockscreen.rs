@@ -370,9 +370,9 @@ impl Render for Lock {
 
         let dots = "•".repeat(self.password.chars().count());
         let status: Option<(&'static str, Rgba)> = if self.busy {
-            Some(("Vérification…", c.text.opacity(0.75)))
+            Some(("Checking…", c.text.opacity(0.75)))
         } else if self.error {
-            Some(("Mot de passe incorrect", c.danger))
+            Some(("Incorrect password", c.danger))
         } else {
             None
         };

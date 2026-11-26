@@ -20,9 +20,9 @@ pub enum TaskStatus {
 impl TaskStatus {
     pub fn label(self) -> &'static str {
         match self {
-            TaskStatus::Todo => "À faire",
-            TaskStatus::InProgress => "En cours",
-            TaskStatus::Done => "Terminé",
+            TaskStatus::Todo => "To Do",
+            TaskStatus::InProgress => "In Progress",
+            TaskStatus::Done => "Done",
         }
     }
 
@@ -50,9 +50,9 @@ pub enum TaskPriority {
 impl TaskPriority {
     pub fn label(self) -> &'static str {
         match self {
-            TaskPriority::High => "Haute",
-            TaskPriority::Normal => "Normale",
-            TaskPriority::Low => "Basse",
+            TaskPriority::High => "High",
+            TaskPriority::Normal => "Normal",
+            TaskPriority::Low => "Low",
         }
     }
 
@@ -140,11 +140,11 @@ pub fn format_due_label(date_str: &str) -> (String, DueUrgency) {
     };
     let diff = (date - today).num_days();
     match diff {
-        d if d < 0 => (format!("En retard ({}j)", -d), DueUrgency::Overdue),
-        0 => ("Aujourd'hui".to_string(), DueUrgency::Today),
-        1 => ("Demain".to_string(), DueUrgency::Upcoming),
-        2..=6 => (format!("Dans {}j", diff), DueUrgency::Upcoming),
-        _ => (date.format("%d/%m").to_string(), DueUrgency::Upcoming),
+        d if d < 0 => (format!("Overdue ({}d)", -d), DueUrgency::Overdue),
+        0 => ("Today".to_string(), DueUrgency::Today),
+        1 => ("Tomorrow".to_string(), DueUrgency::Upcoming),
+        2..=6 => (format!("In {}d", diff), DueUrgency::Upcoming),
+        _ => (date.format("%b %d").to_string(), DueUrgency::Upcoming),
     }
 }
 

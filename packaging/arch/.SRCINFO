@@ -1,0 +1,27 @@
+pkgbase = kumi
+	pkgdesc = Wayland desktop shell (bar, launcher, control center, todo/kanban, emoji picker, lockscreen) built on Kumizo
+	pkgver = 0.12.1
+	pkgrel = 2
+	url = https://github.com/noobmaisfier/kumi
+	arch = x86_64
+	license = MIT
+	license = Apache-2.0
+	makedepends = cargo
+	makedepends = pkgconf
+	depends = alsa-lib
+	depends = fontconfig
+	depends = gcc-libs
+	depends = glibc
+	depends = libxcb
+	depends = libxkbcommon
+	depends = libxkbcommon-x11
+	depends = pam
+	depends = vulkan-icd-loader
+	depends = wayland
+	provides = kumizo
+	options = !lto
+	options = !debug
+	source = kumi-0.12.1-2.tar.gz::https://github.com/noobmaisfier/kumi/archive/refs/tags/v0.12.1-2.tar.gz
+	sha256sums = 0bd7c16c2ac1c061553e36f7f0de83df2a9cca1b46547514454dc41c28377080
+
+pkgname = kumi

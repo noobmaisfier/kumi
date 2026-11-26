@@ -1,7 +1,7 @@
 pkgbase = kumi
 	pkgdesc = Wayland desktop shell (bar, launcher, control center, todo/kanban, emoji picker, lockscreen) built on Kumizo
 	pkgver = 0.12.1
-	pkgrel = 2
+	pkgrel = 3
 	url = https://github.com/noobmaisfier/kumi
 	arch = x86_64
 	license = MIT
@@ -21,7 +21,7 @@ pkgbase = kumi
 	provides = kumizo
 	options = !lto
 	options = !debug
-	source = kumi-0.12.1-2.tar.gz::https://github.com/noobmaisfier/kumi/archive/refs/tags/v0.12.1-2.tar.gz
-	sha256sums = 0bd7c16c2ac1c061553e36f7f0de83df2a9cca1b46547514454dc41c28377080
+	source = kumi-0.12.1-3.tar.gz::https://github.com/noobmaisfier/kumi/archive/refs/tags/v0.12.1-3.tar.gz
+	sha256sums = 6a8c5d71c4e73ed84e47ebaba3adc92814d3cac2a15a0a08624fa396ac9d6958
 
 pkgname = kumi

@@ -23,7 +23,7 @@ provides=('kumizo')
 options=('!lto' '!debug')
 _tag="v${pkgver}-${pkgrel}"
 source=("$pkgname-$pkgver-$pkgrel.tar.gz::https://github.com/noobmaisfier/kumi/archive/refs/tags/${_tag}.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('6a8c5d71c4e73ed84e47ebaba3adc92814d3cac2a15a0a08624fa396ac9d6958')
 
 _srcdir="kumi-${pkgver}-${pkgrel}"
 

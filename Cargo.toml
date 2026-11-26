@@ -10,9 +10,9 @@ version = "0.12.1"
 edition = "2021"
 authors = ["noobmaisfier"]
 license = "MIT OR Apache-2.0"
-repository = "https://github.com/noobmaisfier/A28"
+repository = "https://github.com/noobmaisfier/kumi"
 readme = "README.md"
-description = "Kumi shell: floating bar, control center, launcher, tasks, power, notifs, toasts, OSD, pomodoro"
+description = "Kumi Wayland shell: bar, launcher, control center, todo/kanban, emoji picker, tasks, power, notifs, clipboard, lockscreen"
 keywords = ["wayland", "shell", "status-bar", "gpui"]
 categories = ["gui"]
 

@@ -1,0 +1,49 @@
+# Maintainer: noobmaisfier <noobmaisfier@gmail.com>
+pkgname=kumi
+pkgver=0.12.1
+pkgrel=2
+pkgdesc="Wayland desktop shell (bar, launcher, control center, todo/kanban, emoji picker, lockscreen) built on Kumizo"
+arch=('x86_64')
+url="https://github.com/noobmaisfier/kumi"
+license=('MIT' 'Apache-2.0')
+depends=(
+  'alsa-lib'
+  'fontconfig'
+  'gcc-libs'
+  'glibc'
+  'libxcb'
+  'libxkbcommon'
+  'libxkbcommon-x11'
+  'pam'
+  'vulkan-icd-loader'
+  'wayland'
+)
+makedepends=('cargo' 'pkgconf')
+provides=('kumizo')
+options=('!lto' '!debug')
+_tag="v${pkgver}-${pkgrel}"
+source=("$pkgname-$pkgver-$pkgrel.tar.gz::https://github.com/noobmaisfier/kumi/archive/refs/tags/${_tag}.tar.gz")
+sha256sums=('SKIP')
+
+_srcdir="kumi-${pkgver}-${pkgrel}"
+
+prepare() {
+  cd "$_srcdir"
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
+build() {
+  cd "$_srcdir"
+  export CARGO_TARGET_DIR=target
+  cargo build --frozen --release
+  cargo install --locked --no-track --force --root "$srcdir/kumizo-root" "kumizo@${pkgver}"
+}
+
+package() {
+  cd "$_srcdir"
+  install -Dm755 "target/release/kumi" "$pkgdir/usr/bin/kumi"
+  install -Dm755 "target/release/kumi-lockscreen" "$pkgdir/usr/bin/kumi-lockscreen"
+  install -Dm755 "$srcdir/kumizo-root/bin/kumizo" "$pkgdir/usr/bin/kumizo"
+  install -Dm644 "LICENSE-MIT" "$pkgdir/usr/share/licenses/$pkgname/LICENSE-MIT"
+  install -Dm644 "LICENSE-APACHE" "$pkgdir/usr/share/licenses/$pkgname/LICENSE-APACHE"
+}

@@ -23,6 +23,22 @@ Produces two binaries (`kumi` and `kumi-lockscreen`), controlled via the `kumizo
 | `src/lockscreen.rs` | — | PAM-backed Wayland lockscreen (`kumi-lockscreen` binary) |
 | `src/kit.rs`, `src/ui.rs`, `src/icons.rs` | — | Shared design tokens, animations, and UI helpers |
 
+## Install (Arch Linux)
+
+Prebuilt packages are published in the [`noobmaisfier/repo`](https://github.com/noobmaisfier/repo) custom pacman repository. Add it once to `/etc/pacman.conf`:
+
+```ini
+[noobmaisfier]
+SigLevel = Optional TrustAll
+Server = https://github.com/noobmaisfier/repo/releases/download/$arch
+```
+
+Then install `kumi` (provides `kumi`, `kumi-lockscreen`, and `kumizo`):
+
+```bash
+sudo pacman -Syu kumi
+```
+
 ## Build from source
 
 ```bash

@@ -702,7 +702,7 @@ impl TodoWidget {
             );
 
         let mut sidebar = Sidebar::new("todo-sidebar")
-            .w(px(236.))
+            .w(px(220.))
             .collapsible(false)
             .header(
                 SidebarHeader::new().child(
@@ -1295,7 +1295,7 @@ impl TodoWidget {
                 .bg(surface_bg().opacity(0.55))
                 .border_1()
                 .border_color(cx.theme().border)
-                .min_h(px(520.))
+                .min_h(px(390.))
                 .child(
                     div()
                         .flex()
@@ -1588,9 +1588,12 @@ impl TodoWidget {
             due_row = due_row.child(btn);
         }
 
+        let (modal_w, modal_h) = modal_dimensions(window, 560.0, 520.0);
+
         let card = div()
             .occlude()
-            .w(px(520.))
+            .w(px(modal_w))
+            .h(px(modal_h))
             .flex()
             .flex_col()
             .rounded(px(14.))
@@ -1636,10 +1639,13 @@ impl TodoWidget {
             )
             .child(
                 div()
-                    .p_5()
+                    .flex_1()
+                    .min_h_0()
+                    .overflow_y_scrollbar()
+                    .p_4()
                     .flex()
                     .flex_col()
-                    .gap_4()
+                    .gap_3()
                     .child(
                         div()
                             .flex()
@@ -1766,7 +1772,7 @@ impl TodoWidget {
                                     .text_color(cx.theme().muted_foreground)
                                     .child("NOTES"),
                             )
-                            .child(Textarea::new(&desc_state).h(px(88.))),
+                            .child(Textarea::new(&desc_state).h(px(72.))),
                     ),
             )
             .child(
@@ -1817,6 +1823,7 @@ impl TodoWidget {
         Some(
             div()
                 .id("todo-create-modal-overlay")
+                .occlude()
                 .absolute()
                 .inset_0()
                 .bg(hsla(theme::current().bg).opacity(0.70))
@@ -1983,11 +1990,12 @@ impl TodoWidget {
         }
 
         let store_del = self.store.clone();
+        let (modal_w, modal_h) = modal_dimensions(window, 640.0, 580.0);
 
         let card = div()
             .occlude()
-            .w(px(660.))
-            .h(px(640.))
+            .w(px(modal_w))
+            .h(px(modal_h))
             .flex()
             .flex_col()
             .rounded(px(14.))
@@ -2025,10 +2033,10 @@ impl TodoWidget {
                     .flex_1()
                     .min_h_0()
                     .overflow_y_scrollbar()
-                    .p_5()
+                    .p_4()
                     .flex()
                     .flex_col()
-                    .gap_4()
+                    .gap_3()
                     .child(
                         div()
                             .flex()
@@ -2224,6 +2232,7 @@ impl TodoWidget {
 
         div()
             .id("todo-detail-modal-overlay")
+            .occlude()
             .absolute()
             .inset_0()
             .bg(hsla(theme::current().bg).opacity(0.70))
@@ -2350,12 +2359,13 @@ impl Render for TodoWidget {
             );
 
         let modal_el = self.render_create_modal(window, cx);
+        let (shell_w, shell_h) = shell_dimensions(window);
 
-        let mut app_shell = div()
+        let app_shell = div()
             .occlude()
             .relative()
-            .w(px(1100.))
-            .h(px(720.))
+            .w(px(shell_w))
+            .h(px(shell_h))
             .flex()
             .flex_row()
             .overflow_hidden()
@@ -2366,20 +2376,13 @@ impl Render for TodoWidget {
             .border_color(cx.theme().border)
             .shadow_lg()
             .child(sidebar)
-            .child(center_pane);
+            .child(center_pane)
+            .with_animation("todo-open", ui::anim_pop(), |el, delta| {
+                el.opacity(delta)
+            });
 
-        if let Some(modal) = modal_el {
-            app_shell = app_shell.child(modal);
-        } else if let Some(task) = selected_task {
-            let detail_modal = self.render_detail_modal(task, window, cx);
-            app_shell = app_shell.child(detail_modal);
-        }
-
-        let app_shell = app_shell.with_animation("todo-open", ui::anim_pop(), |el, delta| {
-            el.opacity(delta)
-        });
-
-        ui::backdrop("todo-bg", ids::TODO, 0.52)
+        let mut root = ui::backdrop("todo-bg", ids::TODO, 0.52)
+            .relative()
             .track_focus(&self.focus)
             .on_key_down(cx.listener(|this, ev: &KeyDownEvent, window, cx| {
                 this.on_key(ev, window, cx);
@@ -2387,6 +2390,32 @@ impl Render for TodoWidget {
             .flex()
             .items_center()
             .justify_center()
-            .child(app_shell)
+            .child(app_shell);
+
+        if let Some(modal) = modal_el {
+            root = root.child(modal);
+        } else if let Some(task) = selected_task {
+            let detail_modal = self.render_detail_modal(task, window, cx);
+            root = root.child(detail_modal);
+        }
+
+        root
     }
+}
+
+/// Computes compact, viewport-clamped `(width, height)` for the Todo shell
+/// so it fits comfortably below the bar even on 1366x768 displays.
+fn shell_dimensions(window: &Window) -> (f32, f32) {
+    let vp = window.viewport_size();
+    let w = (f32::from(vp.width) - 160.0).clamp(720.0, 960.0);
+    let h = (f32::from(vp.height) - 150.0).clamp(440.0, 590.0);
+    (w, h)
+}
+
+/// Computes viewport-clamped `(width, height)` for overlay modals.
+fn modal_dimensions(window: &Window, max_w: f32, max_h: f32) -> (f32, f32) {
+    let vp = window.viewport_size();
+    let w = (f32::from(vp.width) - 80.0).min(max_w);
+    let h = (f32::from(vp.height) - 96.0).clamp(400.0, max_h);
+    (w, h)
 }

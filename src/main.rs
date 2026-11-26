@@ -21,6 +21,7 @@ mod clipboard;
 mod control;
 mod emoji_picker;
 mod icons;
+mod kit;
 mod launcher;
 mod notifs;
 mod osd;
@@ -85,7 +86,7 @@ fn main() {
         )
         // ── Side panels (transparent clickable background to close) ──────────
         .window(
-            fullscreen(ids::CONTROL, "kumi-control", KeyboardInteractivity::OnDemand),
+            fullscreen(ids::CONTROL, "kumi-control", KeyboardInteractivity::Exclusive),
             |cx: &mut gpui::App| cx.new(control::ControlCenter::new),
         )
         .window(

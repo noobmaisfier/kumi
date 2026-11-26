@@ -4,11 +4,9 @@
 //! `Progress`, `Tag`, `Badge`, `ScrollableElement`) and synchronized with
 //! Kumi's active theme palette.
 
-use std::sync::Once;
-
 use gpui::prelude::*;
 use gpui::{
-    div, px, rgb, AnimationExt, App, Context, Entity, FocusHandle, FontWeight, Hsla, KeyDownEvent,
+    div, px, AnimationExt, App, Context, Entity, FocusHandle, FontWeight, Hsla, KeyDownEvent,
     Window,
 };
 use gpui_component::badge::Badge;
@@ -20,10 +18,16 @@ use gpui_component::sidebar::{
     Sidebar, SidebarFooter, SidebarGroup, SidebarHeader, SidebarMenu, SidebarMenuItem,
 };
 use gpui_component::tag::{Tag, TagVariant};
-use gpui_component::{ActiveTheme as _, Icon, Sizable as _, Theme as GpuiTheme, ThemeMode};
+use gpui_component::{ActiveTheme as _, Sizable as _};
 use kumizo_kit::prelude::*;
 
 use crate::{
+    kit::{
+        ensure_components_init, hsla, inset_row_bg, panel_bg, raised_bg, surface_bg, svg_icon,
+        sync_gpui_theme, SVG_ARROW_LEFT, SVG_ARROW_RIGHT, SVG_CALENDAR, SVG_CHECK,
+        SVG_CHECK_CIRCLE, SVG_CLOCK, SVG_CLOSE, SVG_FLAME, SVG_KANBAN, SVG_LIST, SVG_PAUSE,
+        SVG_PLAY, SVG_PLUS, SVG_SEARCH, SVG_SORT, SVG_SPARKLES, SVG_TAG, SVG_TRASH,
+    },
     pomodoro::{self, Pomodoro},
     theme,
     todo_store::{
@@ -32,154 +36,6 @@ use crate::{
     },
     ui::{self, ids},
 };
-
-static INIT_COMPONENTS: Once = Once::new();
-
-// Embedded Lucide SVG icons (Kumizo does not mount an external AssetSource,
-// so embedding raw SVG bytes guarantees crisp rendering in every component).
-const SVG_CHECK: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>"#;
-const SVG_PLUS: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>"#;
-const SVG_SEARCH: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>"#;
-const SVG_CLOSE: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>"#;
-const SVG_TRASH: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>"#;
-const SVG_ARROW_LEFT: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>"#;
-const SVG_ARROW_RIGHT: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>"#;
-const SVG_SPARKLES: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>"#;
-const SVG_LIST: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>"#;
-const SVG_KANBAN: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M8 7v7"/><path d="M12 7v4"/><path d="M16 7v9"/></svg>"#;
-const SVG_CALENDAR: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>"#;
-const SVG_FLAME: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>"#;
-const SVG_CLOCK: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>"#;
-const SVG_CHECK_CIRCLE: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>"#;
-const SVG_TAG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>"#;
-const SVG_PLAY: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>"#;
-const SVG_PAUSE: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>"#;
-const SVG_SORT: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 16 4 4 4-4"/><path d="M7 20V4"/><path d="m21 8-4-4-4 4"/><path d="M17 4v16"/></svg>"#;
-
-fn svg_icon(bytes: &'static [u8]) -> Icon {
-    Icon::default().data(bytes)
-}
-
-fn hsla(hex: u32) -> Hsla {
-    rgb(hex).into()
-}
-
-/// Synchronizes `gpui-component`'s global `Theme` with Kumi's active palette.
-/// Must only be called on init or when Kumi's theme name actually changes.
-fn sync_gpui_theme(cx: &mut App) {
-    let target_mode = if theme::is_light() {
-        ThemeMode::Light
-    } else {
-        ThemeMode::Dark
-    };
-    if GpuiTheme::global(cx).mode != target_mode {
-        GpuiTheme::change(target_mode, None, cx);
-    }
-    let pal = theme::current();
-    let bg = hsla(pal.bg);
-    let surface = hsla(pal.surface);
-    let raised = hsla(pal.raised);
-    let border = hsla(pal.border);
-    let text = hsla(pal.text);
-    let muted = hsla(pal.muted);
-    let accent = hsla(pal.accent);
-    let accent2 = hsla(pal.accent2);
-    let on_accent = hsla(pal.on_accent);
-    let ok = hsla(pal.ok);
-    let warn = hsla(pal.warn);
-    let danger = hsla(pal.danger);
-
-    GpuiTheme::update(cx, |t| {
-        t.radius = px(8.);
-        t.radius_lg = px(12.);
-        t.font_size = px(14.);
-
-        let c = &mut t.colors;
-        c.background = surface;
-        c.foreground = text;
-        c.border = border;
-        c.input = border;
-        c.ring = accent;
-        c.caret = accent;
-        c.selection = accent.opacity(0.25);
-
-        c.muted = raised;
-        c.muted_foreground = muted;
-        c.accent = raised;
-        c.accent_foreground = text;
-        c.popover = surface;
-        c.popover_foreground = text;
-        c.group_box = raised;
-        c.group_box_foreground = text;
-
-        c.primary = accent;
-        c.primary_hover = accent.opacity(0.88);
-        c.primary_active = accent.opacity(0.76);
-        c.primary_foreground = on_accent;
-
-        c.secondary = raised;
-        c.secondary_hover = border;
-        c.secondary_active = border;
-        c.secondary_foreground = text;
-
-        c.button = raised;
-        c.button_hover = border;
-        c.button_active = border;
-        c.button_foreground = text;
-        c.button_primary = accent;
-        c.button_primary_hover = accent.opacity(0.88);
-        c.button_primary_active = accent.opacity(0.76);
-        c.button_primary_foreground = on_accent;
-        c.button_secondary = raised;
-        c.button_secondary_hover = border;
-        c.button_secondary_active = border;
-        c.button_secondary_foreground = text;
-
-        c.success = ok;
-        c.success_hover = ok.opacity(0.88);
-        c.success_active = ok.opacity(0.76);
-        c.success_foreground = on_accent;
-
-        c.warning = warn;
-        c.warning_hover = warn.opacity(0.88);
-        c.warning_active = warn.opacity(0.76);
-        c.warning_foreground = on_accent;
-
-        c.danger = danger;
-        c.danger_hover = danger.opacity(0.88);
-        c.danger_active = danger.opacity(0.76);
-        c.danger_foreground = on_accent;
-
-        c.info = accent2;
-        c.info_hover = accent2.opacity(0.88);
-        c.info_active = accent2.opacity(0.76);
-        c.info_foreground = on_accent;
-
-        c.sidebar = bg;
-        c.sidebar_foreground = text;
-        c.sidebar_border = border;
-        c.sidebar_accent = raised;
-        c.sidebar_accent_foreground = accent;
-        c.sidebar_primary = accent;
-        c.sidebar_primary_foreground = on_accent;
-
-        c.list = surface;
-        c.list_hover = raised;
-        c.list_active = raised;
-        c.list_active_border = accent;
-
-        c.progress_bar = accent;
-        c.scrollbar = bg.opacity(0.0);
-        c.scrollbar_thumb = border;
-        c.scrollbar_thumb_hover = muted;
-    });
-}
-
-fn ensure_components_init(cx: &mut App) {
-    INIT_COMPONENTS.call_once(|| {
-        gpui_component::init(cx);
-    });
-}
 
 #[derive(Clone, PartialEq, Eq)]
 enum NavFilter {
@@ -685,7 +541,7 @@ impl TodoWidget {
         let bg_col = if checked {
             cx.theme().primary
         } else {
-            cx.theme().background
+            inset_row_bg()
         };
         let check_fg = cx.theme().primary_foreground;
 
@@ -766,7 +622,7 @@ impl TodoWidget {
                     .px_1p5()
                     .py_0p5()
                     .rounded_full()
-                    .bg(cx.theme().muted)
+                    .bg(surface_bg())
                     .text_xs()
                     .text_color(cx.theme().muted_foreground)
                     .child(n.to_string())
@@ -911,7 +767,7 @@ impl TodoWidget {
                             .gap_1p5()
                             .p_2p5()
                             .rounded(px(8.))
-                            .bg(cx.theme().muted)
+                            .bg(surface_bg())
                             .border_1()
                             .border_color(cx.theme().border)
                             .child(
@@ -943,7 +799,7 @@ impl TodoWidget {
                             .justify_between()
                             .p_2p5()
                             .rounded(px(8.))
-                            .bg(cx.theme().muted)
+                            .bg(surface_bg())
                             .border_1()
                             .border_color(if pomo_running {
                                 cx.theme().primary
@@ -1008,9 +864,9 @@ impl TodoWidget {
             .rounded(px(10.))
             .cursor_pointer()
             .bg(if selected {
-                cx.theme().list_active
+                raised_bg()
             } else {
-                cx.theme().background
+                surface_bg()
             })
             .border_1()
             .border_color(if selected {
@@ -1020,7 +876,7 @@ impl TodoWidget {
             } else {
                 cx.theme().border
             })
-            .hover(|s| s.bg(cx.theme().list_hover))
+            .hover(|s| s.bg(raised_bg().opacity(0.78)))
             .on_click(cx.listener(move |this, _, _, cx| {
                 this.selected_id = Some(id);
                 cx.notify();
@@ -1150,7 +1006,7 @@ impl TodoWidget {
             .gap_3()
             .p_4()
             .rounded(px(12.))
-            .bg(cx.theme().muted)
+            .bg(surface_bg())
             .border_1()
             .border_color(if pomo_running {
                 cx.theme().primary
@@ -1436,7 +1292,7 @@ impl TodoWidget {
                 .gap_2()
                 .p_3()
                 .rounded(px(12.))
-                .bg(cx.theme().muted)
+                .bg(surface_bg().opacity(0.55))
                 .border_1()
                 .border_color(cx.theme().border)
                 .min_h(px(520.))
@@ -1530,9 +1386,9 @@ impl TodoWidget {
                     .rounded(px(9.))
                     .cursor_pointer()
                     .bg(if selected {
-                        cx.theme().list_active
+                        raised_bg()
                     } else {
-                        cx.theme().background
+                        surface_bg()
                     })
                     .border_1()
                     .border_color(if selected {
@@ -1738,7 +1594,7 @@ impl TodoWidget {
             .flex()
             .flex_col()
             .rounded(px(14.))
-            .bg(cx.theme().background)
+            .bg(panel_bg())
             .text_color(cx.theme().foreground)
             .border_1()
             .border_color(cx.theme().border)
@@ -1963,7 +1819,7 @@ impl TodoWidget {
                 .id("todo-create-modal-overlay")
                 .absolute()
                 .inset_0()
-                .bg(cx.theme().background.opacity(0.65))
+                .bg(hsla(theme::current().bg).opacity(0.70))
                 .flex()
                 .items_center()
                 .justify_center()
@@ -2088,7 +1944,7 @@ impl TodoWidget {
                     .px_2p5()
                     .py_1p5()
                     .rounded(px(7.))
-                    .bg(cx.theme().muted)
+                    .bg(surface_bg())
                     .border_1()
                     .border_color(cx.theme().border)
                     .child(self.task_checkbox(
@@ -2135,7 +1991,7 @@ impl TodoWidget {
             .flex()
             .flex_col()
             .rounded(px(14.))
-            .bg(cx.theme().background)
+            .bg(panel_bg())
             .text_color(cx.theme().foreground)
             .border_1()
             .border_color(cx.theme().border)
@@ -2370,7 +2226,7 @@ impl TodoWidget {
             .id("todo-detail-modal-overlay")
             .absolute()
             .inset_0()
-            .bg(cx.theme().background.opacity(0.65))
+            .bg(hsla(theme::current().bg).opacity(0.70))
             .flex()
             .items_center()
             .justify_center()
@@ -2482,7 +2338,6 @@ impl Render for TodoWidget {
             .h_full()
             .flex()
             .flex_col()
-            .bg(cx.theme().background)
             .text_color(cx.theme().foreground)
             .child(top_toolbar)
             .child(
@@ -2505,7 +2360,7 @@ impl Render for TodoWidget {
             .flex_row()
             .overflow_hidden()
             .rounded(px(14.))
-            .bg(cx.theme().background)
+            .bg(panel_bg())
             .text_color(cx.theme().foreground)
             .border_1()
             .border_color(cx.theme().border)

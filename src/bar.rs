@@ -4,7 +4,7 @@
 //! brightness and notifications to trigger the OSD and toasts.
 
 use gpui::prelude::*;
-use gpui::{div, px, App, Context, Div, Entity, FontWeight, Window};
+use gpui::{div, px, App, Context, Div, Entity, FontWeight, Rgba, Window};
 use kumizo_kit::prelude::*;
 
 use crate::{
@@ -470,10 +470,10 @@ impl TopBar {
         };
 
         let mut sys = div().flex().flex_row().items_center();
-        sys = if density == BarDensity::Wide {
-            sys.gap_3()
-        } else {
+        sys = if density == BarDensity::Compact {
             sys.gap_2()
+        } else {
+            sys.gap_3()
         };
         // Like Bluetooth: hidden if no radio, accent if active.
         // Wi-Fi has one more state (connected vs on-but-offline).
@@ -506,59 +506,68 @@ impl TopBar {
             }
             sys = sys.child(bt_cell);
         }
-        let show_vol_text = density != BarDensity::Compact;
-        let show_bri_text = density == BarDensity::Wide;
-        let show_ram_full = density == BarDensity::Wide;
-        let show_ram_pct = density == BarDensity::Medium && mem_pct >= 75;
+        let vol_color = if muted { pal::muted() } else { pal::accent2() };
+        let vol_cell = if density == BarDensity::Wide {
+            div()
+                .flex()
+                .items_center()
+                .gap_2()
+                .child(ui::glyph(ui::vol_glyph(vol, muted), 14., vol_color))
+                .child(div().text_xs().child(if muted {
+                    "muted".to_string()
+                } else {
+                    format!("{vol}%")
+                }))
+        } else {
+            icon_ring(
+                ui::vol_glyph(vol, muted),
+                10.5,
+                if muted { 0.0 } else { vol as f32 / 100.0 },
+                vol_color,
+                vol_color,
+            )
+        };
+        let bri_cell = if density == BarDensity::Wide {
+            div()
+                .flex()
+                .items_center()
+                .gap_2()
+                .child(ui::glyph(bri_icon, 14., pal::warn()))
+                .child(div().text_xs().child(format!("{bri_pct}%")))
+        } else {
+            icon_ring(
+                bri_icon,
+                10.5,
+                bri_pct as f32 / 100.0,
+                pal::warn(),
+                pal::warn(),
+            )
+        };
+        let ram_cell = if density == BarDensity::Wide {
+            div()
+                .flex()
+                .items_center()
+                .gap_2()
+                .child(ui::glyph(icons::RAM, 14., ram_icon))
+                .child(
+                    div()
+                        .text_xs()
+                        .text_color(ram_color)
+                        .child(format!("{:.1}/{:.1}G", mem.used_gib(), mem.total_gib())),
+                )
+        } else {
+            icon_ring(
+                icons::RAM,
+                10.0,
+                mem_pct as f32 / 100.0,
+                ram_icon,
+                ram_icon,
+            )
+        };
         sys = sys
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_2()
-                    .child(ui::glyph(
-                        ui::vol_glyph(vol, muted),
-                        14.,
-                        if muted { pal::muted() } else { pal::accent2() },
-                    ))
-                    .children(show_vol_text.then(|| {
-                        div().text_xs().child(if muted {
-                            "muted".to_string()
-                        } else {
-                            format!("{vol}%")
-                        })
-                    })),
-            )
-            // Brightness: right after volume (same cell shape).
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_2()
-                    .child(ui::glyph(bri_icon, 14., pal::warn()))
-                    .children(show_bri_text.then(|| div().text_xs().child(format!("{bri_pct}%")))),
-            )
-            // RAM: right before battery (full GiB on Wide, % only under pressure on Medium, icon-only on Compact).
-            .child(
-                div()
-                    .flex()
-                    .items_center()
-                    .gap_2()
-                    .child(ui::glyph(icons::RAM, 14., ram_icon))
-                    .children(show_ram_full.then(|| {
-                        div().text_xs().text_color(ram_color).child(format!(
-                            "{:.1}/{:.1}G",
-                            mem.used_gib(),
-                            mem.total_gib()
-                        ))
-                    }))
-                    .children(show_ram_pct.then(|| {
-                        div()
-                            .text_xs()
-                            .text_color(ram_color)
-                            .child(format!("{mem_pct}%"))
-                    })),
-            )
+            .child(vol_cell)
+            .child(bri_cell)
+            .child(ram_cell)
             .child(
                 div()
                     .flex()
@@ -641,6 +650,35 @@ impl TopBar {
         }
         row.child(todo_btn).child(bell)
     }
+}
+
+/// Compact progress ring with a centered glyph inside.
+fn icon_ring(
+    glyph: &'static str,
+    glyph_size: f32,
+    frac: f32,
+    ring_color: Rgba,
+    icon_color: Rgba,
+) -> Div {
+    div()
+        .relative()
+        .size(px(25.))
+        .child(ui::ring(
+            frac,
+            25.,
+            2.0,
+            ring_color,
+            pal::with_alpha(ring_color, 0.2),
+        ))
+        .child(
+            div()
+                .absolute()
+                .inset_0()
+                .flex()
+                .items_center()
+                .justify_center()
+                .child(ui::glyph(glyph, glyph_size, icon_color)),
+        )
 }
 
 impl Render for TopBar {

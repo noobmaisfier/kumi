@@ -1,0 +1,88 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (defaults to ref name)'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  arch-package:
+    name: Build Arch x86_64 package
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    env:
+      INPUT_TAG: ${{ github.event.inputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          pacman -Syu --noconfirm --needed \
+            base-devel git rust pkgconf wayland libxkbcommon libxkbcommon-x11 \
+            fontconfig alsa-lib pam vulkan-icd-loader curl
+
+      - name: Build package with makepkg
+        run: |
+          TAG="${INPUT_TAG:-$GITHUB_REF_NAME}"
+          VER_FULL="${TAG#v}"
+          if [[ "$VER_FULL" == *-* ]]; then
+            PKGVER="${VER_FULL%-*}"
+            PKGREL="${VER_FULL##*-}"
+          else
+            PKGVER="$VER_FULL"
+            PKGREL=1
+          fi
+
+          sed -i \
+            -e "s/^pkgver=.*/pkgver=${PKGVER}/" \
+            -e "s/^pkgrel=.*/pkgrel=${PKGREL}/" \
+            -e "s/^_tag=.*/_tag=\"${TAG}\"/" \
+            -e "s|^_srcdir=.*|_srcdir=\"kumi-${VER_FULL}\"|" \
+            packaging/arch/PKGBUILD
+
+          tar --exclude='./dist' --exclude='./target' \
+            --exclude='./packaging/arch/src' --exclude='./packaging/arch/pkg' \
+            --exclude='./packaging/arch/*.tar.*' \
+            -czf "packaging/arch/kumi-${PKGVER}-${PKGREL}.tar.gz" \
+            --transform="s,^\.,kumi-${VER_FULL}," .
+
+          useradd -m -s /bin/bash builder
+          echo 'builder ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/builder
+          mkdir -p "$GITHUB_WORKSPACE/dist"
+          chown -R builder:builder "$GITHUB_WORKSPACE"
+          su - builder -c "cd '$GITHUB_WORKSPACE/packaging/arch' && PKGDEST='$GITHUB_WORKSPACE/dist' makepkg --skipchecksums -fc --noconfirm"
+          ls -la "$GITHUB_WORKSPACE/dist"
+
+      - name: Publish GitHub Release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          files: |
+            dist/kumi-[0-9]*.pkg.tar.zst
+          generate_release_notes: true
+
+      - name: Dispatch update to noobmaisfier/repo (if REPO_DISPATCH_TOKEN is set)
+        env:
+          REPO_DISPATCH_TOKEN: ${{ secrets.REPO_DISPATCH_TOKEN }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          if [ -z "${REPO_DISPATCH_TOKEN:-}" ]; then
+            echo "REPO_DISPATCH_TOKEN not set; noobmaisfier/repo sync-releases.yml will pick it up on schedule."
+            exit 0
+          fi
+          TAG="${INPUT_TAG:-$GITHUB_REF_NAME}"
+          pkg="$(basename "$(ls "$GITHUB_WORKSPACE/dist"/kumi-[0-9]*.pkg.tar.zst | head -n 1)")"
+          pkg_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/${pkg}"
+          curl -fsSL -X POST \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${REPO_DISPATCH_TOKEN}" \
+            "https://api.github.com/repos/noobmaisfier/repo/dispatches" \
+            -d "{\"event_type\":\"publish-pkg\",\"client_payload\":{\"pkg_url\":\"${pkg_url}\"}}"

@@ -11,15 +11,14 @@ use gpui::{
     Window,
 };
 use gpui_component::button::{Button, ButtonVariants as _};
-use gpui_component::tag::{Tag, TagVariant};
 use gpui_component::{ActiveTheme as _, Sizable as _};
 use kumizo_kit::prelude::*;
 
 use crate::{
     kit::{
-        clamped_panel_size, ensure_components_init, kbd_hint, panel_bg, raised_bg, surface_bg,
-        svg_icon, sync_gpui_theme, sync_if_needed, SVG_ALERT, SVG_BATTERY, SVG_CLOSE, SVG_LOCK,
-        SVG_LOGOUT, SVG_MOON, SVG_POWER, SVG_ROTATE_CCW, SVG_USER,
+        clamped_panel_size, ensure_components_init, hsla, panel_bg, raised_bg, surface_bg,
+        svg_icon, sync_gpui_theme, sync_if_needed, SVG_ALERT, SVG_CLOSE, SVG_LOCK, SVG_LOGOUT,
+        SVG_MOON, SVG_POWER, SVG_ROTATE_CCW,
     },
     theme,
     ui::{self, ids},
@@ -38,7 +37,6 @@ struct Entry {
     action: Action,
     icon: &'static [u8],
     label: &'static str,
-    subtitle: &'static str,
     key: &'static str,
     confirm: bool,
     destructive: bool,
@@ -49,7 +47,6 @@ const ENTRIES: [Entry; 5] = [
         action: Action::Lock,
         icon: SVG_LOCK,
         label: "Verrouiller",
-        subtitle: "Écran de verrouillage",
         key: "l",
         confirm: false,
         destructive: false,
@@ -58,7 +55,6 @@ const ENTRIES: [Entry; 5] = [
         action: Action::Logout,
         icon: SVG_LOGOUT,
         label: "Déconnexion",
-        subtitle: "Fermer la session",
         key: "o",
         confirm: true,
         destructive: true,
@@ -67,7 +63,6 @@ const ENTRIES: [Entry; 5] = [
         action: Action::Suspend,
         icon: SVG_MOON,
         label: "Veille",
-        subtitle: "Mise en veille RAM",
         key: "s",
         confirm: false,
         destructive: false,
@@ -76,7 +71,6 @@ const ENTRIES: [Entry; 5] = [
         action: Action::Reboot,
         icon: SVG_ROTATE_CCW,
         label: "Redémarrer",
-        subtitle: "Relancer le système",
         key: "r",
         confirm: true,
         destructive: true,
@@ -85,7 +79,6 @@ const ENTRIES: [Entry; 5] = [
         action: Action::Shutdown,
         icon: SVG_POWER,
         label: "Éteindre",
-        subtitle: "Arrêt complet",
         key: "p",
         confirm: true,
         destructive: true,
@@ -249,13 +242,18 @@ impl Render for PowerMenu {
 
         let clk = self.clock.read(cx);
         let time_hm = clk.time_hm();
-        let date_str = clk.date_formatted();
         let bat_pct = self.battery.read(cx).percent();
         let bat_present = Battery::read_sysfs().is_some();
 
+        let meta = if bat_present {
+            format!("{time_hm} · {bat_pct}%")
+        } else {
+            time_hm
+        };
+
         let header = div()
             .px_5()
-            .py_3p5()
+            .py_3()
             .border_b_1()
             .border_color(cx.theme().border)
             .flex()
@@ -268,37 +266,19 @@ impl Render for PowerMenu {
                     .flex()
                     .flex_row()
                     .items_center()
-                    .gap_3()
+                    .gap_2()
                     .child(
                         div()
-                            .w(px(36.))
-                            .h(px(36.))
-                            .rounded(px(9.))
-                            .bg(cx.theme().primary.opacity(0.15))
-                            .border_1()
-                            .border_color(cx.theme().primary.opacity(0.35))
-                            .flex()
-                            .items_center()
-                            .justify_center()
-                            .child(svg_icon(SVG_USER).text_color(cx.theme().primary)),
+                            .text_sm()
+                            .font_weight(FontWeight::SEMIBOLD)
+                            .text_color(cx.theme().foreground)
+                            .child(self.user_host.clone()),
                     )
                     .child(
                         div()
-                            .flex()
-                            .flex_col()
-                            .child(
-                                div()
-                                    .text_sm()
-                                    .font_weight(FontWeight::BOLD)
-                                    .text_color(cx.theme().foreground)
-                                    .child(self.user_host.clone()),
-                            )
-                            .child(
-                                div()
-                                    .text_xs()
-                                    .text_color(cx.theme().muted_foreground)
-                                    .child(format!("Session active · Uptime {}", self.uptime_label)),
-                            ),
+                            .text_xs()
+                            .text_color(cx.theme().muted_foreground)
+                            .child(format!("· Uptime {}", self.uptime_label)),
                     ),
             )
             .child(
@@ -306,53 +286,24 @@ impl Render for PowerMenu {
                     .flex()
                     .flex_row()
                     .items_center()
-                    .gap_2p5()
-                    .when(bat_present, |d| {
-                        d.child(
-                            Tag::new()
-                                .with_variant(TagVariant::Secondary)
-                                .small()
-                                .child(
-                                    div()
-                                        .flex()
-                                        .flex_row()
-                                        .items_center()
-                                        .gap_1()
-                                        .child(svg_icon(SVG_BATTERY).xsmall())
-                                        .child(format!("{bat_pct}%")),
-                                ),
-                        )
-                    })
+                    .gap_2()
                     .child(
                         div()
-                            .flex()
-                            .flex_col()
-                            .items_end()
-                            .child(
-                                div()
-                                    .text_sm()
-                                    .font_weight(FontWeight::BOLD)
-                                    .font_features(ui::tabular())
-                                    .text_color(cx.theme().foreground)
-                                    .child(time_hm),
-                            )
-                            .child(
-                                div()
-                                    .text_xs()
-                                    .text_color(cx.theme().muted_foreground)
-                                    .child(date_str),
-                            ),
+                            .text_xs()
+                            .font_features(ui::tabular())
+                            .text_color(cx.theme().muted_foreground)
+                            .child(meta),
                     )
                     .child(
                         Button::new("pw-close")
-                            .small()
+                            .xsmall()
                             .ghost()
                             .icon(svg_icon(SVG_CLOSE))
                             .on_click(cx.listener(|this, _, _, cx| this.close(cx))),
                     ),
             );
 
-        let mut cards_row = div().flex().flex_row().gap_3().w_full();
+        let mut cards_row = div().flex().flex_row().gap_2p5().w_full();
         for (i, e) in ENTRIES.iter().enumerate() {
             let selected = i == self.selected;
             let armed = self.armed == Some(i);
@@ -362,71 +313,53 @@ impl Render for PowerMenu {
                 cx.theme().primary
             };
 
+            let hover_bg = if armed {
+                cx.theme().danger.opacity(0.22)
+            } else {
+                raised_bg().opacity(0.8)
+            };
+
             cards_row = cards_row.child(
                 div()
                     .id(("pw-card", i))
                     .flex_1()
                     .min_w_0()
-                    .h(px(152.))
-                    .p_3()
-                    .rounded(px(12.))
+                    .h(px(110.))
+                    .px_2()
+                    .py_3()
+                    .rounded(px(11.))
                     .cursor_pointer()
                     .flex()
                     .flex_col()
                     .items_center()
-                    .justify_between()
+                    .justify_center()
+                    .gap_2()
                     .bg(if armed {
                         cx.theme().danger.opacity(0.18)
                     } else if selected {
                         raised_bg()
                     } else {
-                        surface_bg()
+                        surface_bg().opacity(0.65)
                     })
                     .border_1()
                     .border_color(if armed {
                         cx.theme().danger
                     } else if selected {
-                        cx.theme().primary
+                        tone.opacity(0.8)
                     } else {
-                        cx.theme().border
+                        hsla(0).opacity(0.0)
                     })
-                    .hover(|s| s.border_color(tone.opacity(0.75)))
+                    .hover(move |s| s.bg(hover_bg))
                     .on_click(cx.listener(move |this, _: &ClickEvent, _, cx| {
                         this.activate(i, cx);
                     }))
-                    .child(
-                        div()
-                            .w_full()
-                            .flex()
-                            .flex_row()
-                            .justify_end()
-                            .child(
-                                div()
-                                    .px_1p5()
-                                    .py_0p5()
-                                    .rounded(px(5.))
-                                    .bg(panel_bg())
-                                    .border_1()
-                                    .border_color(cx.theme().border)
-                                    .text_xs()
-                                    .font_weight(FontWeight::SEMIBOLD)
-                                    .text_color(cx.theme().muted_foreground)
-                                    .child(e.key.to_uppercase()),
-                            ),
-                    )
-                    .child(
-                        div()
-                            .w(px(46.))
-                            .h(px(46.))
-                            .rounded(px(12.))
-                            .bg(tone.opacity(0.16))
-                            .border_1()
-                            .border_color(tone.opacity(0.32))
-                            .flex()
-                            .items_center()
-                            .justify_center()
-                            .child(svg_icon(e.icon).large().text_color(tone)),
-                    )
+                    .child(svg_icon(e.icon).large().text_color(if selected || armed {
+                        tone
+                    } else if e.destructive {
+                        cx.theme().danger.opacity(0.85)
+                    } else {
+                        cx.theme().foreground
+                    }))
                     .child(
                         div()
                             .flex()
@@ -434,7 +367,7 @@ impl Render for PowerMenu {
                             .items_center()
                             .child(
                                 div()
-                                    .text_sm()
+                                    .text_xs()
                                     .font_weight(FontWeight::SEMIBOLD)
                                     .text_color(cx.theme().foreground)
                                     .child(e.label),
@@ -443,8 +376,7 @@ impl Render for PowerMenu {
                                 div()
                                     .text_xs()
                                     .text_color(cx.theme().muted_foreground)
-                                    .truncate()
-                                    .child(e.subtitle),
+                                    .child(e.key.to_uppercase()),
                             ),
                     ),
             );
@@ -454,12 +386,12 @@ impl Render for PowerMenu {
             let entry = &ENTRIES[idx];
             div()
                 .w_full()
-                .px_4()
-                .py_3()
+                .px_3p5()
+                .py_2p5()
                 .rounded(px(10.))
                 .bg(cx.theme().danger.opacity(0.14))
                 .border_1()
-                .border_color(cx.theme().danger.opacity(0.65))
+                .border_color(cx.theme().danger.opacity(0.55))
                 .flex()
                 .flex_row()
                 .items_center()
@@ -470,28 +402,18 @@ impl Render for PowerMenu {
                         .flex()
                         .flex_row()
                         .items_center()
-                        .gap_2p5()
-                        .child(svg_icon(SVG_ALERT).text_color(cx.theme().danger))
+                        .gap_2()
+                        .child(svg_icon(SVG_ALERT).small().text_color(cx.theme().danger))
                         .child(
                             div()
-                                .flex()
-                                .flex_col()
-                                .child(
-                                    div()
-                                        .text_sm()
-                                        .font_weight(FontWeight::BOLD)
-                                        .text_color(cx.theme().foreground)
-                                        .child(format!("Confirmer « {} » ?", entry.label)),
-                                )
-                                .child(
-                                    div()
-                                        .text_xs()
-                                        .text_color(cx.theme().muted_foreground)
-                                        .child(format!(
-                                            "Appuyez sur Entrée, [{}], ou cliquez sur Confirmer.",
-                                            entry.key.to_uppercase()
-                                        )),
-                                ),
+                                .text_xs()
+                                .font_weight(FontWeight::SEMIBOLD)
+                                .text_color(cx.theme().foreground)
+                                .child(format!(
+                                    "Confirmer « {} » ? (Entrée ou [{}])",
+                                    entry.label,
+                                    entry.key.to_uppercase()
+                                )),
                         ),
                 )
                 .child(
@@ -499,10 +421,10 @@ impl Render for PowerMenu {
                         .flex()
                         .flex_row()
                         .items_center()
-                        .gap_2()
+                        .gap_1p5()
                         .child(
                             Button::new("pw-arm-cancel")
-                                .small()
+                                .xsmall()
                                 .ghost()
                                 .label("Annuler")
                                 .on_click(cx.listener(|this, _, _, cx| {
@@ -512,7 +434,7 @@ impl Render for PowerMenu {
                         )
                         .child(
                             Button::new("pw-arm-ok")
-                                .small()
+                                .xsmall()
                                 .danger()
                                 .label(entry.label)
                                 .on_click(cx.listener(move |this, _, _, cx| {
@@ -524,26 +446,19 @@ impl Render for PowerMenu {
 
         let footer = div()
             .px_5()
-            .py_2p5()
+            .py_2()
             .border_t_1()
             .border_color(cx.theme().border)
             .flex()
             .flex_row()
             .items_center()
             .justify_between()
-            .child(
-                div()
-                    .flex()
-                    .flex_row()
-                    .items_center()
-                    .gap_4()
-                    .child(kbd_hint("←/→", "Choisir", cx))
-                    .child(kbd_hint("Entrée", "Valider", cx))
-                    .child(kbd_hint("L O S R P", "Accès direct", cx)),
-            )
-            .child(kbd_hint("Échap", "Fermer", cx));
+            .text_xs()
+            .text_color(cx.theme().muted_foreground)
+            .child("←/→ choisir · Entrée valider · L O S R P raccourcis")
+            .child("Échap fermer");
 
-        let (panel_w, _) = clamped_panel_size(window, 800., 440., 620., 300.);
+        let (panel_w, _) = clamped_panel_size(window, 620., 360., 500., 240.);
 
         let panel = div()
             .occlude()
@@ -551,7 +466,7 @@ impl Render for PowerMenu {
             .flex()
             .flex_col()
             .overflow_hidden()
-            .rounded(px(16.))
+            .rounded(px(14.))
             .bg(panel_bg())
             .text_color(cx.theme().foreground)
             .border_1()
@@ -560,10 +475,10 @@ impl Render for PowerMenu {
             .child(header)
             .child(
                 div()
-                    .p_5()
+                    .p_4()
                     .flex()
                     .flex_col()
-                    .gap_3p5()
+                    .gap_3()
                     .child(cards_row)
                     .children(confirm_banner),
             )

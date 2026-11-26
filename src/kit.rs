@@ -3,9 +3,8 @@
 
 use std::sync::Once;
 
-use gpui::prelude::*;
-use gpui::{div, px, rgb, App, Div, FontWeight, Hsla, Pixels, Window};
-use gpui_component::{ActiveTheme as _, Icon, Theme as GpuiTheme, ThemeMode};
+use gpui::{px, rgb, App, Hsla, Pixels, Window};
+use gpui_component::{Icon, Theme as GpuiTheme, ThemeMode};
 
 use crate::theme;
 
@@ -57,7 +56,6 @@ pub const SVG_LINK: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox=
 pub const SVG_CODE: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>"#;
 pub const SVG_FILE_TEXT: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>"#;
 pub const SVG_APPS: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>"#;
-pub const SVG_USER: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>"#;
 pub const SVG_ALERT: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>"#;
 
 pub fn svg_icon(bytes: &'static [u8]) -> Icon {
@@ -95,33 +93,6 @@ pub fn clamped_panel_size(
     let w = px(max_w).min((vp.width - px(48.)).max(px(min_w)));
     let h = px(max_h).min((vp.height - px(48.)).max(px(min_h)));
     (w, h)
-}
-
-pub fn kbd_hint(key: &'static str, label: &'static str, cx: &App) -> Div {
-    div()
-        .flex()
-        .flex_row()
-        .items_center()
-        .gap_1p5()
-        .child(
-            div()
-                .px_1p5()
-                .py_0p5()
-                .rounded(px(5.))
-                .bg(surface_bg())
-                .border_1()
-                .border_color(cx.theme().border)
-                .text_xs()
-                .font_weight(FontWeight::SEMIBOLD)
-                .text_color(cx.theme().foreground)
-                .child(key),
-        )
-        .child(
-            div()
-                .text_xs()
-                .text_color(cx.theme().muted_foreground)
-                .child(label),
-        )
 }
 
 pub fn ensure_components_init(cx: &mut App) {

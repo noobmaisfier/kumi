@@ -32,6 +32,29 @@ const WS_ICONS: [&str; 10] = [
     "\u{f075a}", // 10
 ];
 
+/// Responsive layout tier derived from the bar's viewport width.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum BarDensity {
+    /// Wide displays (> 1500px, e.g. 1080p/1440p): full labels, all workspaces, full media controls.
+    Wide,
+    /// Medium / laptop displays (1050px..=1500px, e.g. 1366x768, 1440x900): dynamic workspaces, concise system cluster.
+    Medium,
+    /// Compact / split displays (< 1050px): minimal glyphs, compact media & pomodoro.
+    Compact,
+}
+
+impl BarDensity {
+    fn from_width(width: f32) -> Self {
+        if width > 1500.0 {
+            Self::Wide
+        } else if width >= 1050.0 {
+            Self::Medium
+        } else {
+            Self::Compact
+        }
+    }
+}
+
 pub struct TopBar {
     clock: Entity<Clock>,
     battery: Entity<Battery>,
@@ -135,12 +158,14 @@ impl TopBar {
         }
     }
 
-    // ── Left : launcher · workspaces ──────────────────────────────────────
-    fn left(&self, cx: &App) -> Div {
+    // ── Left : workspaces · pomodoro ──────────────────────────────────────
+    fn left(&self, cx: &App, density: BarDensity) -> Div {
         let comp = self.compositor.read(cx);
+        let compact_ws = density != BarDensity::Wide;
         let workspaces: Vec<(i32, String, bool, bool, usize, bool)> = comp
             .workspaces()
             .iter()
+            .filter(|w| !compact_ws || w.is_active || w.is_urgent || w.window_count > 0)
             .map(|w| {
                 (
                     w.id,
@@ -152,6 +177,11 @@ impl TopBar {
                 )
             })
             .collect();
+        let ws_min_w = if density == BarDensity::Compact {
+            22.
+        } else {
+            26.
+        };
         let mut ws_row = div().flex().flex_row().items_center().gap_1();
         for (id, name, active, urgent, count, special) in workspaces {
             let compositor = self.compositor.clone();
@@ -169,7 +199,7 @@ impl TopBar {
             };
             ws_row = ws_row.child(
                 btn(("ws", id as usize))
-                    .min_w(px(26.))
+                    .min_w(px(ws_min_w))
                     .bg(pal::with_alpha(pal::raised(), 0.0))
                     .text_color(fg)
                     .text_xs()
@@ -197,7 +227,7 @@ impl TopBar {
 
         // Pomodoro: **separate** pill, to the right of the workspaces island.
         // The ring replaces the glyph: phase progress, cycle color,
-        // remaining time on the right.
+        // remaining time on the right (hidden on Compact when idle).
         let pomodoro_pill = {
             let p = self.pomodoro.read(cx);
             let color = p.phase.color();
@@ -208,6 +238,7 @@ impl TopBar {
             } else {
                 pal::with_alpha(color, 0.5)
             };
+            let show_time = density != BarDensity::Compact || p.running;
             let time = p.mmss();
             let pomodoro = self.pomodoro.clone();
             pill()
@@ -224,33 +255,36 @@ impl TopBar {
                     ring_color,
                     pal::with_alpha(color, 0.18),
                 ))
-                .child(
+                .children(show_time.then(|| {
                     div()
                         .text_sm()
                         .font_weight(FontWeight::SEMIBOLD)
                         .font_features(ui::tabular())
                         .text_color(fg)
-                        .child(time),
-                )
+                        .child(time)
+                }))
         };
 
         let main = pill().child(ws_row);
-        div()
-            .flex()
-            .flex_row()
-            .items_center()
-            .gap_2()
-            .child(main)
-            .child(pomodoro_pill)
+        let mut row = div().flex().flex_row().items_center();
+        row = if density == BarDensity::Compact {
+            row.gap_1()
+        } else {
+            row.gap_2()
+        };
+        row.child(main).child(pomodoro_pill)
     }
 
     // ── Center : clock · media ───────────────────────────────────────────
     /// Media pill: **MPRIS only** (browser, external player...).
     /// The shell no longer talks to an integrated player: a single indicator,
     /// a single set of buttons, those of the player MPRIS designates.
-    fn media_pill(&self, cx: &App) -> Div {
+    fn media_pill(&self, cx: &App, density: BarDensity) -> Option<Div> {
         let m = self.mpris.read(cx);
         let label = m.title().map(|_| m.display_label());
+        if label.is_none() && density == BarDensity::Compact {
+            return None;
+        }
         let playing = matches!(m.status(), PlaybackStatus::Playing);
 
         let glyph_color = if playing { pal::accent() } else { pal::muted() };
@@ -264,34 +298,39 @@ impl TopBar {
         let mut row = pill().child(ui::glyph(icons::MUSIC, 12., glyph_color));
 
         if let Some(text) = label {
-            row = row.child(
-                div()
-                    .min_w_0()
-                    .max_w(px(160.))
-                    .truncate()
-                    .text_sm()
-                    .text_color(pal::text())
-                    .child(text),
-            );
+            if density != BarDensity::Compact {
+                let title_max_w = if density == BarDensity::Wide { 160. } else { 100. };
+                row = row.child(
+                    div()
+                        .min_w_0()
+                        .max_w(px(title_max_w))
+                        .truncate()
+                        .text_sm()
+                        .text_color(pal::text())
+                        .child(text),
+                );
+            }
             let (pr, pp, nx) = (self.mpris.clone(), self.mpris.clone(), self.mpris.clone());
-            row = row
-                .child(
+            if density == BarDensity::Wide {
+                row = row.child(
                     btn("mp-prev")
                         .hover(|s| s.bg(pal::raised()))
                         .on_click(move |_, _, cx| {
                             pr.update(cx, |m, _| m.previous());
                         })
                         .child(ui::glyph(icons::PREV, 11., pal::muted())),
-                )
-                .child(
-                    btn("mp-play")
-                        .hover(|s| s.bg(pal::raised()))
-                        .on_click(move |_, _, cx| {
-                            pp.update(cx, |m, _| m.play_pause());
-                        })
-                        .child(play_glyph()),
-                )
-                .child(
+                );
+            }
+            row = row.child(
+                btn("mp-play")
+                    .hover(|s| s.bg(pal::raised()))
+                    .on_click(move |_, _, cx| {
+                        pp.update(cx, |m, _| m.play_pause());
+                    })
+                    .child(play_glyph()),
+            );
+            if density == BarDensity::Wide {
+                row = row.child(
                     btn("mp-next")
                         .hover(|s| s.bg(pal::raised()))
                         .on_click(move |_, _, cx| {
@@ -299,11 +338,12 @@ impl TopBar {
                         })
                         .child(ui::glyph(icons::NEXT, 11., pal::muted())),
                 );
+            }
         }
-        div().flex().items_center().child(row)
+        Some(div().flex().items_center().child(row))
     }
 
-    fn center(&self, cx: &App) -> Div {
+    fn center(&self, cx: &App, density: BarDensity) -> Div {
         // Time only: the date clutters the bar (the clock pill always opens
         // the notifications center).
         let clock = self.clock.read(cx);
@@ -322,18 +362,23 @@ impl TopBar {
                     .child(time),
             );
 
-        div()
-            .flex()
-            .flex_row()
-            .items_center()
-            .gap_2()
-            .child(clock_pill)
-            .child(self.media_pill(cx))
+        let mut row = div().flex().flex_row().items_center();
+        row = if density == BarDensity::Compact {
+            row.gap_1()
+        } else {
+            row.gap_2()
+        };
+        row.child(clock_pill).children(self.media_pill(cx, density))
     }
 
     // ── Right : tray · system · notifications ────────────────────────────
-    fn right(&self, cx: &App) -> Div {
-        let mut row = div().flex().flex_row().items_center().gap_2();
+    fn right(&self, cx: &App, density: BarDensity) -> Div {
+        let mut row = div().flex().flex_row().items_center();
+        row = if density == BarDensity::Compact {
+            row.gap_1()
+        } else {
+            row.gap_2()
+        };
 
         // Tray. Some apps (Free Download Manager) provide a monochrome white
         // logo, invisible on a light theme. We then put a `muted` pill behind
@@ -424,7 +469,12 @@ impl TopBar {
             pal::ok()
         };
 
-        let mut sys = div().flex().flex_row().items_center().gap_3();
+        let mut sys = div().flex().flex_row().items_center();
+        sys = if density == BarDensity::Wide {
+            sys.gap_3()
+        } else {
+            sys.gap_2()
+        };
         // Like Bluetooth: hidden if no radio, accent if active.
         // Wi-Fi has one more state (connected vs on-but-offline).
         if wifi_avail {
@@ -440,13 +490,13 @@ impl TopBar {
                 },
             ));
         }
-        if bt_avail {
+        if bt_avail && (density != BarDensity::Compact || bt_on) {
             let mut bt_cell = div().flex().items_center().gap_1().child(ui::glyph(
                 icons::BLUETOOTH,
                 13.,
                 if bt_on { pal::accent() } else { pal::muted() },
             ));
-            if bt_count > 0 {
+            if bt_count > 0 && density != BarDensity::Compact {
                 bt_cell = bt_cell.child(
                     div()
                         .text_xs()
@@ -456,6 +506,10 @@ impl TopBar {
             }
             sys = sys.child(bt_cell);
         }
+        let show_vol_text = density != BarDensity::Compact;
+        let show_bri_text = density == BarDensity::Wide;
+        let show_ram_full = density == BarDensity::Wide;
+        let show_ram_pct = density == BarDensity::Medium && mem_pct >= 75;
         sys = sys
             .child(
                 div()
@@ -467,10 +521,12 @@ impl TopBar {
                         14.,
                         if muted { pal::muted() } else { pal::accent2() },
                     ))
-                    .child(div().text_xs().child(if muted {
-                        "muted".to_string()
-                    } else {
-                        format!("{vol}%")
+                    .children(show_vol_text.then(|| {
+                        div().text_xs().child(if muted {
+                            "muted".to_string()
+                        } else {
+                            format!("{vol}%")
+                        })
                     })),
             )
             // Brightness: right after volume (same cell shape).
@@ -480,26 +536,28 @@ impl TopBar {
                     .items_center()
                     .gap_2()
                     .child(ui::glyph(bri_icon, 14., pal::warn()))
-                    .child(div().text_xs().child(format!("{bri_pct}%"))),
+                    .children(show_bri_text.then(|| div().text_xs().child(format!("{bri_pct}%")))),
             )
-            // RAM: right before battery (usage/total in GiB, colored under
-            // memory pressure).
+            // RAM: right before battery (full GiB on Wide, % only under pressure on Medium, icon-only on Compact).
             .child(
                 div()
                     .flex()
                     .items_center()
                     .gap_2()
                     .child(ui::glyph(icons::RAM, 14., ram_icon))
-                    .child(
+                    .children(show_ram_full.then(|| {
+                        div().text_xs().text_color(ram_color).child(format!(
+                            "{:.1}/{:.1}G",
+                            mem.used_gib(),
+                            mem.total_gib()
+                        ))
+                    }))
+                    .children(show_ram_pct.then(|| {
                         div()
                             .text_xs()
                             .text_color(ram_color)
-                            .child(format!(
-                                "{:.1}/{:.1}G",
-                                mem.used_gib(),
-                                mem.total_gib()
-                            )),
-                    ),
+                            .child(format!("{mem_pct}%"))
+                    })),
             )
             .child(
                 div()
@@ -541,7 +599,7 @@ impl TopBar {
                     pal::muted()
                 },
             ));
-        if active_tasks > 0 {
+        if active_tasks > 0 && density != BarDensity::Compact {
             todo_btn = todo_btn.child(
                 div()
                     .text_xs()
@@ -586,8 +644,10 @@ impl TopBar {
 }
 
 impl Render for TopBar {
-    fn render(&mut self, _: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        div()
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let width = f32::from(window.viewport_size().width);
+        let density = BarDensity::from_width(width);
+        let mut root = div()
             .size_full()
             .flex()
             .flex_row()
@@ -595,23 +655,26 @@ impl Render for TopBar {
             .px(px(8.))
             .pt(px(6.))
             .text_sm()
-            .text_color(pal::text())
-            .child(
-                div()
-                    .flex_1()
-                    .min_w_0()
-                    .flex()
-                    .justify_start()
-                    .child(self.left(cx)),
-            )
-            .child(self.center(cx))
-            .child(
-                div()
-                    .flex_1()
-                    .min_w_0()
-                    .flex()
-                    .justify_end()
-                    .child(self.right(cx)),
-            )
+            .text_color(pal::text());
+        root = if density == BarDensity::Compact {
+            root.gap_1()
+        } else {
+            root.gap_2()
+        };
+        root.child(
+            div()
+                .flex_1()
+                .flex()
+                .justify_start()
+                .child(self.left(cx, density)),
+        )
+        .child(self.center(cx, density))
+        .child(
+            div()
+                .flex_1()
+                .flex()
+                .justify_end()
+                .child(self.right(cx, density)),
+        )
     }
 }

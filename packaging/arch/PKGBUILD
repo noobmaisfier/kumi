@@ -1,7 +1,7 @@
 # Maintainer: noobmaisfier <noobmaisfier@gmail.com>
 pkgname=kumi
 pkgver=0.12.1
-pkgrel=2
+pkgrel=3
 pkgdesc="Wayland desktop shell (bar, launcher, control center, todo/kanban, emoji picker, lockscreen) built on Kumizo"
 arch=('x86_64')
 url="https://github.com/noobmaisfier/kumi"
@@ -23,7 +23,7 @@ provides=('kumizo')
 options=('!lto' '!debug')
 _tag="v${pkgver}-${pkgrel}"
 source=("$pkgname-$pkgver-$pkgrel.tar.gz::https://github.com/noobmaisfier/kumi/archive/refs/tags/${_tag}.tar.gz")
-sha256sums=('0bd7c16c2ac1c061553e36f7f0de83df2a9cca1b46547514454dc41c28377080')
+sha256sums=('SKIP')
 
 _srcdir="kumi-${pkgver}-${pkgrel}"
 

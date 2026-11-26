@@ -369,12 +369,12 @@ impl Render for Lock {
         let (time, date) = (clock.time_hm().to_string(), clock.date_formatted().to_string());
 
         let dots = "•".repeat(self.password.chars().count());
-        let (status, status_color) = if self.busy {
-            ("Verifying…", c.text.opacity(0.85))
+        let status: Option<(&'static str, Rgba)> = if self.busy {
+            Some(("Vérification…", c.text.opacity(0.75)))
         } else if self.error {
-            ("Incorrect password", c.danger)
+            Some(("Mot de passe incorrect", c.danger))
         } else {
-            ("Type your password then Enter", c.text.opacity(0.85))
+            None
         };
 
         let mut root = div()
@@ -387,14 +387,14 @@ impl Render for Lock {
             .flex_col()
             .items_center()
             .justify_center()
-            .gap_4();
+            .gap_10();
 
         // Background: the current wallpaper (theme pool) blurred, veiled by a
         // gradient of the `bg` color. The veil is strong enough that the text
         // keeps a good contrast even on a busy wallpaper.
         if let Some(wall) = self.wallpaper.clone() {
             let (top, bottom) = if is_dark(c.bg) {
-                (0.40, 0.68)
+                (0.42, 0.72)
             } else {
                 (0.55, 0.82)
             };
@@ -421,45 +421,81 @@ impl Render for Lock {
                 );
         }
 
+        let border_col = if self.error {
+            c.danger.opacity(0.85)
+        } else if !self.password.is_empty() {
+            c.accent.opacity(0.65)
+        } else {
+            c.text.opacity(0.18)
+        };
+
         root.child(
             div()
-                .text_size(px(120.))
-                .font_weight(FontWeight::BOLD)
-                .font_features(clock_features())
-                .text_color(c.text)
-                .child(time),
-        )
-        .child(
-            div()
-                .text_size(px(22.))
-                .text_color(c.text.opacity(0.9))
-                .child(date),
-        )
-        .child(
-            div()
-                .mt(px(40.))
-                .w(px(360.))
-                .h(px(52.))
                 .flex()
+                .flex_col()
                 .items_center()
-                .justify_center()
-                .rounded_full()
-                .border_2()
-                .border_color(if self.error { c.danger } else { c.accent })
-                .bg(c.bg.opacity(0.55))
-                .text_size(px(22.))
-                .text_color(c.text)
-                .child(if dots.is_empty() {
-                    div().text_color(c.text.opacity(0.75)).child(self.user.clone())
-                } else {
-                    div().child(dots)
-                }),
+                .gap_1()
+                .child(
+                    div()
+                        .text_size(px(18.))
+                        .font_weight(FontWeight::MEDIUM)
+                        .text_color(c.text.opacity(0.78))
+                        .child(date),
+                )
+                .child(
+                    div()
+                        .text_size(px(104.))
+                        .line_height(px(108.))
+                        .font_weight(FontWeight::BOLD)
+                        .font_features(clock_features())
+                        .text_color(c.text)
+                        .child(time),
+                ),
         )
         .child(
             div()
-                .text_size(px(15.))
-                .text_color(status_color)
-                .child(status),
+                .flex()
+                .flex_col()
+                .items_center()
+                .gap_2p5()
+                .child(
+                    div()
+                        .w(px(280.))
+                        .h(px(44.))
+                        .px_5()
+                        .overflow_hidden()
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .rounded_full()
+                        .border_1()
+                        .border_color(border_col)
+                        .bg(c.bg.opacity(0.45))
+                        .shadow_lg()
+                        .child(if dots.is_empty() {
+                            div()
+                                .text_sm()
+                                .font_weight(FontWeight::MEDIUM)
+                                .text_color(c.text.opacity(0.60))
+                                .child(self.user.clone())
+                        } else {
+                            div()
+                                .text_size(px(18.))
+                                .text_color(c.text)
+                                .truncate()
+                                .child(dots)
+                        }),
+                )
+                .child(
+                    div()
+                        .h(px(20.))
+                        .flex()
+                        .items_center()
+                        .justify_center()
+                        .text_xs()
+                        .font_weight(FontWeight::MEDIUM)
+                        .children(status.map(|(msg, col)| div().text_color(col).child(msg))),
+                ),
         )
     }
 }

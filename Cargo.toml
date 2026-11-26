@@ -38,3 +38,9 @@ smallvec = "1"
 # No audio engine here: the shell only reads MPRIS media (browser,
 # external player…). A local player lives in its own process and publishes
 # itself via MPRIS — keeping the shell MIT OR Apache-2.0.
+
+[profile.release]
+opt-level = "z"
+lto = "thin"
+codegen-units = 1
+strip = true

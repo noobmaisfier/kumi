@@ -1158,11 +1158,7 @@ impl Render for NotesWidget {
                 el.opacity(delta)
             });
 
-        let mut root = div()
-            .id("notes-bg")
-            .size_full()
-            .bg(crate::theme::pal::with_alpha(crate::theme::pal::bg(), 0.52))
-            .on_click(cx.listener(|this, _, _, cx| this.close_window(cx)))
+        let mut root = ui::backdrop("notes-bg", ids::NOTES, ui::DIM_MODAL)
             .relative()
             .track_focus(&self.focus)
             .on_key_down(cx.listener(|this, ev: &KeyDownEvent, window, cx| {

@@ -485,7 +485,7 @@ impl Render for PowerMenu {
             .child(footer)
             .with_animation("pw-open", ui::anim_pop(), |el, delta| el.opacity(delta));
 
-        ui::backdrop("pw-bg", ids::POWER, 0.65)
+        ui::backdrop("pw-bg", ids::POWER, ui::DIM_MODAL)
             .track_focus(&self.focus)
             .on_key_down(cx.listener(|this, ev: &KeyDownEvent, _, cx| this.on_key(ev, cx)))
             .flex()

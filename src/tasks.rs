@@ -671,11 +671,7 @@ impl Render for TaskSwitcher {
                 )
             });
 
-        div()
-            .id("tk-bg")
-            .size_full()
-            .bg(crate::theme::pal::with_alpha(crate::theme::pal::bg(), 0.72))
-            .on_click(cx.listener(|this, _, _, cx| this.close(cx)))
+        ui::backdrop("tk-bg", ids::TASKS, ui::DIM_MODAL)
             .track_focus(&self.focus)
             .on_key_down(cx.listener(|this, ev: &KeyDownEvent, _, cx| this.on_key(ev, cx)))
             .flex()

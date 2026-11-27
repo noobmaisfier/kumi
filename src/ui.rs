@@ -188,6 +188,12 @@ pub fn btn(id: impl Into<ElementId>) -> Stateful<Div> {
         .cursor_pointer()
 }
 
+/// Standard backdrop dimming levels:
+/// - `DIM_MODAL`: strong 78% dimming for focused centered workspaces (Launcher, Notes, Todo, Clipboard, Tasks, Themes, Power, Emoji)
+/// - `DIM_PANEL`: softer 65% dimming for side sheets (Control Center)
+pub const DIM_MODAL: f32 = 0.78;
+pub const DIM_PANEL: f32 = 0.65;
+
 /// Full-screen backdrop: a click in the empty area closes the `window`.
 /// Panels placed on top must call `.occlude()`.
 pub fn backdrop(id: &'static str, window: &'static str, dim: f32) -> Stateful<Div> {

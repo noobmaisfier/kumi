@@ -982,7 +982,7 @@ impl Render for ClipboardPanel {
                 el.opacity(delta).mt(px(6.0 * (1.0 - delta)))
             });
 
-        ui::backdrop("cb-bg", ids::CLIPBOARD, 0.58)
+        ui::backdrop("cb-bg", ids::CLIPBOARD, ui::DIM_MODAL)
             .track_focus(&self.focus)
             .capture_key_down(cx.listener(|this, ev: &KeyDownEvent, window, cx| {
                 this.capture_key(ev, window, cx);

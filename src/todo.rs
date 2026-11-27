@@ -2381,7 +2381,7 @@ impl Render for TodoWidget {
                 el.opacity(delta)
             });
 
-        let mut root = ui::backdrop("todo-bg", ids::TODO, 0.52)
+        let mut root = ui::backdrop("todo-bg", ids::TODO, ui::DIM_MODAL)
             .relative()
             .track_focus(&self.focus)
             .on_key_down(cx.listener(|this, ev: &KeyDownEvent, window, cx| {

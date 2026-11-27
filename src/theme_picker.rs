@@ -181,7 +181,7 @@ impl Render for ThemePicker {
             );
         }
 
-        ui::backdrop("th-bg", ids::THEMES, 0.55)
+        ui::backdrop("th-bg", ids::THEMES, ui::DIM_MODAL)
             .track_focus(&self.focus)
             .on_key_down(cx.listener(|this, ev: &KeyDownEvent, _, cx| this.on_key(ev, cx)))
             .flex()

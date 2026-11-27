@@ -1944,7 +1944,7 @@ impl Render for ControlCenter {
 
         let shell = shell.with_animation("cc-open", ui::anim_pop(), |el, d| el.opacity(d));
 
-        ui::backdrop("cc-bg", ids::CONTROL, 0.48)
+        ui::backdrop("cc-bg", ids::CONTROL, ui::DIM_PANEL)
             .track_focus(&self.focus)
             .on_key_down(cx.listener(|this, ev: &KeyDownEvent, window, cx| {
                 this.on_key(ev, window, cx);

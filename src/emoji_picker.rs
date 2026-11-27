@@ -766,7 +766,7 @@ impl Render for EmojiPicker {
                 )
         };
 
-        ui::backdrop("emoji-bg", ids::EMOJI, 0.6)
+        ui::backdrop("emoji-bg", ids::EMOJI, ui::DIM_MODAL)
             .track_focus(&self.focus)
             .on_key_down(cx.listener(|this, ev: &KeyDownEvent, _, cx| this.on_key(ev, cx)))
             .flex()

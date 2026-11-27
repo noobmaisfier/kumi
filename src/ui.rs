@@ -196,11 +196,19 @@ pub const DIM_PANEL: f32 = 0.65;
 
 /// Full-screen backdrop: a click in the empty area closes the `window`.
 /// Panels placed on top must call `.occlude()`.
+///
+/// In light themes, uses the theme's dark ink (`pal::text()`) at ~72% of `dim`
+/// (~56% for modals, ~47% for panels) so the backdrop dims rather than fogs.
 pub fn backdrop(id: &'static str, window: &'static str, dim: f32) -> Stateful<Div> {
+    let (color, alpha) = if crate::theme::is_light() {
+        (pal::text(), dim * 0.72)
+    } else {
+        (pal::bg(), dim)
+    };
     div()
         .id(id)
         .size_full()
-        .bg(pal::with_alpha(pal::bg(), dim))
+        .bg(pal::with_alpha(color, alpha))
         .on_click(move |_, _, cx| cx.hide_window(window))
 }
 

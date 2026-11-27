@@ -25,9 +25,11 @@ use crate::{
         ensure_components_init, hsla, inset_row_bg, panel_bg, raised_bg, surface_bg, svg_icon,
         sync_gpui_theme, SVG_ARROW_RIGHT, SVG_BATTERY, SVG_BELL, SVG_BELL_OFF, SVG_BLUETOOTH,
         SVG_CHECK, SVG_CHECK_CIRCLE, SVG_CHEVRON_RIGHT, SVG_CLIPBOARD, SVG_CLOSE, SVG_CPU,
-        SVG_LOCK, SVG_MOON, SVG_MUSIC, SVG_PALETTE, SVG_PAUSE, SVG_PLAY, SVG_POWER, SVG_ROTATE_CCW,
-        SVG_SKIP_BACK, SVG_SKIP_FWD, SVG_SLIDERS, SVG_SUN, SVG_VOL_2, SVG_VOL_X, SVG_WIFI,
+        SVG_FILE_TEXT, SVG_LOCK, SVG_MOON, SVG_MUSIC, SVG_PALETTE, SVG_PAUSE, SVG_PLAY, SVG_POWER,
+        SVG_ROTATE_CCW, SVG_SKIP_BACK, SVG_SKIP_FWD, SVG_SLIDERS, SVG_SUN, SVG_VOL_2, SVG_VOL_X,
+        SVG_WIFI,
     },
+    notes_store::{self, NotesStore},
     pomodoro::{self, Pomodoro},
     theme,
     todo_store::{self, TaskPriority, TodoStore},
@@ -53,6 +55,7 @@ pub struct ControlCenter {
     notifs: Entity<Notifications>,
     pomodoro: Entity<Pomodoro>,
     todo: Entity<TodoStore>,
+    notes: Entity<NotesStore>,
 
     sub_view: SubView,
     wifi_pw_for: Option<String>,
@@ -137,6 +140,7 @@ impl ControlCenter {
 
         let pomodoro = pomodoro::handle(cx);
         let todo = todo_store::handle(cx);
+        let notes = notes_store::handle(cx);
         let audio = cx.service::<Audio>();
         let brightness = cx.service::<Brightness>();
         let memory = cx.service::<Memory>();
@@ -145,6 +149,7 @@ impl ControlCenter {
 
         cx.observe(&pomodoro, |_, _, cx| cx.notify()).detach();
         cx.observe(&todo, |_, _, cx| cx.notify()).detach();
+        cx.observe(&notes, |_, _, cx| cx.notify()).detach();
         cx.observe(&memory, |this, _, cx| {
             this.disk = read_root_disk();
             cx.notify();
@@ -163,6 +168,7 @@ impl ControlCenter {
             notifs: cx.service::<Notifications>(),
             pomodoro,
             todo,
+            notes,
             sub_view: SubView::None,
             wifi_pw_for: None,
             wifi_pw_need_focus: false,
@@ -311,6 +317,7 @@ impl ControlCenter {
         let time = clk.time_hm();
         let date = clk.date_formatted();
         let active_tasks = self.todo.read(cx).active_count();
+        let notes_count = self.notes.read(cx).total_count();
         let unread_notifs = self.notifs.read(cx).unread_count();
 
         div()
@@ -375,6 +382,18 @@ impl ControlCenter {
                             .icon(svg_icon(SVG_CLIPBOARD))
                             .label("Clipboard")
                             .on_click(|_, _, cx| ui::toggle_exclusive(ids::CLIPBOARD, cx)),
+                    )
+                    .child(
+                        Button::new("cc-act-notes")
+                            .small()
+                            .secondary()
+                            .icon(svg_icon(SVG_FILE_TEXT))
+                            .label(if notes_count > 0 {
+                                format!("Notes ({notes_count})")
+                            } else {
+                                "Notes".to_string()
+                            })
+                            .on_click(|_, _, cx| ui::toggle_exclusive(ids::NOTES, cx)),
                     )
                     .child(
                         Button::new("cc-act-todo")

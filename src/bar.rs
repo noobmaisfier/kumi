@@ -9,6 +9,7 @@ use kumizo_kit::prelude::*;
 
 use crate::{
     icons,
+    notes_store::{self, NotesStore},
     osd::{self, OsdKind, OsdState},
     pomodoro::{self, Pomodoro},
     theme::{self, pal},
@@ -69,6 +70,7 @@ pub struct TopBar {
     notifs: Entity<Notifications>,
     pomodoro: Entity<Pomodoro>,
     todo: Entity<TodoStore>,
+    notes: Entity<NotesStore>,
     osd: Entity<OsdState>,
     last_vol: (u8, bool),
     last_bri: u8,
@@ -83,11 +85,13 @@ impl TopBar {
         let notifs = cx.service::<Notifications>();
         let pomodoro = pomodoro::handle(cx);
         let todo = todo_store::handle(cx);
+        let notes = notes_store::handle(cx);
         let osd = osd::handle(cx);
         let mpris = cx.service::<Mpris>();
 
         cx.observe(&pomodoro, |_, _, cx| cx.notify()).detach();
         cx.observe(&todo, |_, _, cx| cx.notify()).detach();
+        cx.observe(&notes, |_, _, cx| cx.notify()).detach();
         // The media pill wakes up when the player changes title/state
         // (MPRIS events via `playerctl --follow`, zero CPU at rest).
         cx.observe(&mpris, |_, _, cx| cx.notify()).detach();
@@ -151,6 +155,7 @@ impl TopBar {
             notifs,
             pomodoro,
             todo,
+            notes,
             osd,
             last_vol,
             last_bri,
@@ -619,6 +624,33 @@ impl TopBar {
             );
         }
 
+        // Notes
+        let notes_count = self.notes.read(cx).total_count();
+        let mut notes_btn = pill()
+            .id("bar-notes")
+            .cursor_pointer()
+            .hover(|s| s.bg(pal::raised()))
+            .on_click(|_, _, cx| ui::toggle_exclusive(ids::NOTES, cx))
+            .child(ui::glyph(
+                icons::NOTE,
+                13.,
+                if notes_count > 0 {
+                    pal::accent()
+                } else {
+                    pal::muted()
+                },
+            ));
+        if notes_count > 0 && density != BarDensity::Compact {
+            notes_btn = notes_btn.child(
+                div()
+                    .text_xs()
+                    .font_weight(FontWeight::SEMIBOLD)
+                    .font_features(ui::tabular())
+                    .text_color(pal::text())
+                    .child(notes_count.to_string()),
+            );
+        }
+
         // Notifications
         let n = self.notifs.read(cx);
         let (unread, dnd) = (n.unread_count(), n.is_dnd());
@@ -648,7 +680,7 @@ impl TopBar {
                     }),
             );
         }
-        row.child(todo_btn).child(bell)
+        row.child(notes_btn).child(todo_btn).child(bell)
     }
 }
 

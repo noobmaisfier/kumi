@@ -42,3 +42,4 @@ pub const REPEAT: &str = "\u{f01e}";
 pub const FOLDER: &str = "\u{f07b}";
 pub const LIST: &str = "\u{f03a}";
 pub const SMILE: &str = "\u{f118}";
+pub const NOTE: &str = "\u{f249}";

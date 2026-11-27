@@ -106,6 +106,7 @@ pub mod ids {
     pub const OSD: &str = "kumi-osd";
     pub const EMOJI: &str = "kumi-emoji";
     pub const TODO: &str = "kumi-todo";
+    pub const NOTES: &str = "kumi-notes";
 }
 
 /// Actually installed Nerd Font family (same as waybar): requesting an
@@ -210,6 +211,7 @@ pub fn toggle_exclusive(target: &'static str, cx: &mut App) {
         ids::EMOJI,
         ids::THEMES,
         ids::TODO,
+        ids::NOTES,
     ] {
         if id != target {
             cx.hide_window(id);

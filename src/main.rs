@@ -7,6 +7,9 @@
 //!   kumi-tasks     open windows            (fullscreen, exclusive keyboard)
 //!   kumi-power     power menu              (fullscreen, exclusive keyboard)
 //!   kumi-emoji     emoji picker            (fullscreen, exclusive keyboard)
+//!   kumi-clipboard clipboard history?
+//!   kumi-todo      todo & kanban           (fullscreen, exclusive keyboard)
+//!   kumi-notes     markdown notes          (fullscreen, exclusive keyboard)
 //!   kumi-control   control center          (transparent fullscreen, panel on the right)
 //!   kumi-notifs    notification history   (transparent fullscreen, panel on the right)
 //!   kumi-toasts    notification popups     (top-right corner, opened by the bar)
@@ -23,6 +26,8 @@ mod emoji_picker;
 mod icons;
 mod kit;
 mod launcher;
+mod notes;
+mod notes_store;
 mod notifs;
 mod osd;
 mod pomodoro;
@@ -121,6 +126,10 @@ fn main() {
         .window(
             fullscreen(ids::TODO, "kumi-todo", KeyboardInteractivity::Exclusive),
             |cx: &mut gpui::App| cx.new(todo::TodoWidget::new),
+        )
+        .window(
+            fullscreen(ids::NOTES, "kumi-notes", KeyboardInteractivity::Exclusive),
+            |cx: &mut gpui::App| cx.new(notes::NotesWidget::new),
         )
         // ── Toasts (opened/closed by the bar according to `toasts()`) ───────
         .window(
